@@ -216,6 +216,36 @@
     .employee-list {
       display: grid;
       gap: 10px;
+      flex: 0 0 auto;
+      min-height: 150px;
+      max-height: clamp(190px, 28vh, 310px);
+      overflow-y: scroll !important;
+      overflow-x: hidden;
+      padding-right: 8px;
+      padding-bottom: 4px;
+      overscroll-behavior: contain;
+      scrollbar-gutter: stable;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255,255,255,0.62) rgba(255,255,255,0.08);
+    }
+
+    .employee-list::-webkit-scrollbar {
+      width: 12px;
+    }
+
+    .employee-list::-webkit-scrollbar-track {
+      background: rgba(255,255,255,0.08);
+      border-radius: 999px;
+    }
+
+    .employee-list::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.48);
+      border: 3px solid rgba(18,18,28,0.95);
+      border-radius: 999px;
+    }
+
+    .employee-list::-webkit-scrollbar-thumb:hover {
+      background: rgba(255,255,255,0.72);
     }
 
     .employee-btn {
@@ -896,7 +926,11 @@
     @media (max-width: 1180px) {
       .app-shell { grid-template-columns: 1fr; }
       .sidebar { position: relative; top: 0; height: auto; }
-      .employee-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .employee-list { 
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        min-height: 150px;
+        max-height: 320px;
+      }
       .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .board { grid-template-columns: 1fr; }
     }
@@ -923,7 +957,11 @@
       .actions { justify-content: stretch; }
       .btn { width: 100%; }
       .toolbar { grid-template-columns: 1fr; }
-      .employee-list { grid-template-columns: 1fr; }
+      .employee-list { 
+        grid-template-columns: 1fr;
+        min-height: 170px;
+        max-height: 360px;
+      }
       .stats { grid-template-columns: 1fr; }
       .form-grid { grid-template-columns: 1fr; }
     }
