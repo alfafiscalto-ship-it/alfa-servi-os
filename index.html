@@ -549,26 +549,59 @@
       position: fixed;
       inset: 0;
       display: none;
-      place-items: center;
-      padding: 18px;
+      padding: clamp(10px, 2.5vw, 22px);
       background: rgba(0, 0, 0, 0.58);
       z-index: 50;
+      overflow-y: auto;
+      overflow-x: hidden;
+      overscroll-behavior: contain;
     }
 
-    .modal.open { display: grid; }
+    .modal.open {
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+    }
 
     .modal-card {
-      width: min(760px, 100%);
+      width: min(820px, 100%);
+      max-height: calc(100dvh - 28px);
+      overflow-y: auto;
+      overscroll-behavior: contain;
       border-radius: var(--radius-xl);
       padding: 20px;
+      margin: auto 0;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255,255,255,0.25) transparent;
+    }
+
+    .modal-card::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .modal-card::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .modal-card::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.24);
+      border-radius: 999px;
     }
 
     .modal-header {
+      position: sticky;
+      top: -20px;
+      z-index: 2;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 16px;
-      margin-bottom: 15px;
+      margin: -20px -20px 15px;
+      padding: 20px 20px 14px;
+      background: rgba(17, 17, 26, 0.88);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
     }
 
     .modal-header h3 {
@@ -856,6 +889,22 @@
     }
 
     @media (max-width: 720px) {
+      .modal {
+        padding: 8px;
+      }
+
+      .modal-card {
+        max-height: calc(100dvh - 16px);
+        padding: 16px;
+        border-radius: 22px;
+      }
+
+      .modal-header {
+        top: -16px;
+        margin: -16px -16px 14px;
+        padding: 16px 16px 12px;
+      }
+
       .app-shell { width: min(100% - 18px, 1480px); padding-top: 10px; }
       .topbar { grid-template-columns: 1fr; }
       .actions { justify-content: stretch; }
@@ -2608,6 +2657,16 @@
       }
     }
 
+    function debounce(fn, delay = 120) {
+      let timer = null;
+      return (...args) => {
+        window.clearTimeout(timer);
+        timer = window.setTimeout(() => fn(...args), delay);
+      };
+    }
+
+    const debouncedRender = debounce(render, 120);
+
     document.getElementById("loginForm").addEventListener("submit", handleLogin);
     document.getElementById("logoutBtn").addEventListener("click", handleLogout);
     document.getElementById("openModalBtn").addEventListener("click", () => openModal());
@@ -2618,7 +2677,7 @@
       document.querySelectorAll(".employee-btn").forEach(item => item.classList.toggle("active", item.dataset.employee === "todos"));
       render();
     });
-    document.getElementById("searchInput").addEventListener("input", render);
+    document.getElementById("searchInput").addEventListener("input", debouncedRender);
     document.getElementById("statusFilter").addEventListener("change", render);
     document.getElementById("priorityFilter").addEventListener("change", render);
     document.querySelector(".board").addEventListener("click", handleTaskAction);
