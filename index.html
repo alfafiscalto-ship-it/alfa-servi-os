@@ -200,6 +200,13 @@
       font-weight: 500;
     }
 
+    .brand,
+    .user-box,
+    .nav-title,
+    .config-box {
+      flex-shrink: 0;
+    }
+
     .nav-title {
       margin: 22px 0 10px;
       color: var(--muted-2);
@@ -212,6 +219,25 @@
     .employee-list {
       display: grid;
       gap: 10px;
+      min-height: 0;
+      max-height: calc(100vh - 370px);
+      overflow-y: auto;
+      padding-right: 6px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255,255,255,0.26) transparent;
+    }
+
+    .employee-list::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .employee-list::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .employee-list::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.22);
+      border-radius: 999px;
     }
 
     .employee-btn {
@@ -265,11 +291,12 @@
     }
 
     .sidebar-footer {
-      margin-top: auto;
+      margin-top: 16px;
       padding-top: 18px;
       color: var(--muted);
       font-size: 12px;
       line-height: 1.5;
+      flex-shrink: 0;
     }
 
     .main { min-width: 0; }
@@ -549,59 +576,26 @@
       position: fixed;
       inset: 0;
       display: none;
-      padding: clamp(10px, 2.5vw, 22px);
+      place-items: center;
+      padding: 18px;
       background: rgba(0, 0, 0, 0.58);
       z-index: 50;
-      overflow-y: auto;
-      overflow-x: hidden;
-      overscroll-behavior: contain;
     }
 
-    .modal.open {
-      display: flex;
-      align-items: flex-start;
-      justify-content: center;
-    }
+    .modal.open { display: grid; }
 
     .modal-card {
-      width: min(820px, 100%);
-      max-height: calc(100dvh - 28px);
-      overflow-y: auto;
-      overscroll-behavior: contain;
+      width: min(760px, 100%);
       border-radius: var(--radius-xl);
       padding: 20px;
-      margin: auto 0;
-      scrollbar-width: thin;
-      scrollbar-color: rgba(255,255,255,0.25) transparent;
-    }
-
-    .modal-card::-webkit-scrollbar {
-      width: 8px;
-    }
-
-    .modal-card::-webkit-scrollbar-track {
-      background: transparent;
-    }
-
-    .modal-card::-webkit-scrollbar-thumb {
-      background: rgba(255,255,255,0.24);
-      border-radius: 999px;
     }
 
     .modal-header {
-      position: sticky;
-      top: -20px;
-      z-index: 2;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 16px;
-      margin: -20px -20px 15px;
-      padding: 20px 20px 14px;
-      background: rgba(17, 17, 26, 0.88);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border-bottom: 1px solid var(--border);
+      margin-bottom: 15px;
     }
 
     .modal-header h3 {
@@ -692,225 +686,27 @@
       word-break: break-word;
     }
 
-
-
-    .nav-switch {
-      display: grid;
-      gap: 10px;
-      margin-bottom: 12px;
-      flex-shrink: 0;
-    }
-
-    .nav-switch .employee-btn {
-      justify-content: flex-start;
-      gap: 10px;
-    }
-
-    .management-section {
-      display: none;
-      border-radius: var(--radius-xl);
-      padding: 20px;
-      background: var(--panel);
-      border: 1px solid var(--border);
-      backdrop-filter: var(--blur);
-      -webkit-backdrop-filter: var(--blur);
-      box-shadow: var(--shadow);
-      margin-bottom: 16px;
-    }
-
-    .management-section.active {
-      display: block;
-    }
-
-    .section-head {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 16px;
-      margin-bottom: 18px;
-    }
-
-    .section-head h2 {
-      margin: 0;
-      font-size: clamp(24px, 3vw, 34px);
-      letter-spacing: -0.05em;
-    }
-
-    .section-head p {
-      margin: 8px 0 0;
-      color: var(--muted);
-      font-size: 14px;
-      line-height: 1.5;
-    }
-
-    .client-grid,
-    .report-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr auto;
-      gap: 12px;
-      align-items: end;
-      margin-bottom: 16px;
-    }
-
-    .client-table-wrap,
-    .report-table-wrap {
-      max-height: 520px;
-      overflow: auto;
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      background: rgba(255,255,255,0.035);
-    }
-
-    .data-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-    }
-
-    .data-table th,
-    .data-table td {
-      padding: 12px;
-      border-bottom: 1px solid var(--border);
-      text-align: left;
-      vertical-align: top;
-      overflow-wrap: anywhere;
-    }
-
-    .data-table th {
-      position: sticky;
-      top: 0;
-      z-index: 1;
-      background: rgba(20,20,31,0.96);
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.07em;
-      font-size: 11px;
-      font-weight: 900;
-    }
-
-    .mini-kpis {
-      display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
-      gap: 12px;
-      margin: 14px 0 18px;
-    }
-
-    .mini-kpi {
-      border-radius: 18px;
-      border: 1px solid var(--border);
-      background: rgba(255,255,255,0.045);
-      padding: 14px;
-    }
-
-    .mini-kpi span {
-      display: block;
-      color: var(--muted);
-      font-size: 11px;
-      font-weight: 900;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-    }
-
-    .mini-kpi strong {
-      display: block;
-      margin-top: 7px;
-      font-size: 26px;
-      letter-spacing: -0.05em;
-    }
-
-    .task-title,
-    .task-desc,
-    .pill,
-    .task-card a {
-      overflow-wrap: anywhere;
-      word-break: break-word;
-    }
-
-    .task-top {
-      min-width: 0;
-    }
-
-    .task-title {
-      min-width: 0;
-      flex: 1;
-    }
-
-    .task-card {
-      overflow: hidden;
-    }
-
-    .attachment-list {
-      margin-top: 12px;
-      display: grid;
-      gap: 7px;
-    }
-
-    .attachment-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 7px;
-      width: fit-content;
-      max-width: 100%;
-      border: 1px solid rgba(255,255,255,0.14);
-      border-radius: 999px;
-      padding: 6px 9px;
-      color: #e5e7eb;
-      text-decoration: none;
-      background: rgba(255,255,255,0.06);
-      font-size: 11px;
-      font-weight: 800;
-    }
-
-    .attachment-link:hover {
-      background: rgba(255,255,255,0.12);
-    }
-
-    .btn-start { background: rgba(56, 189, 248, 0.14); border-color: rgba(56, 189, 248, 0.36); }
-    .btn-finish { background: rgba(34, 197, 94, 0.14); border-color: rgba(34, 197, 94, 0.36); }
-    .btn-reopen { background: rgba(245, 158, 11, 0.14); border-color: rgba(245, 158, 11, 0.36); }
-    .visual-vencido { color: #fecaca; border-color: rgba(239,68,68,0.48); background: rgba(239,68,68,0.16); }
-    .visual-hoje { color: #fde68a; border-color: rgba(245,158,11,0.46); background: rgba(245,158,11,0.16); }
-    .visual-ok { color: #bbf7d0; border-color: rgba(34,197,94,0.42); background: rgba(34,197,94,0.14); }
-
-    @media (max-width: 900px) {
-      .client-grid,
-      .report-grid,
-      .mini-kpis {
-        grid-template-columns: 1fr;
-      }
-    }
-
     @media (max-width: 1180px) {
       .app-shell { grid-template-columns: 1fr; }
       .sidebar { position: relative; top: 0; height: auto; }
-      .employee-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .employee-list { 
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        max-height: 320px;
+      }
       .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .board { grid-template-columns: 1fr; }
     }
 
     @media (max-width: 720px) {
-      .modal {
-        padding: 8px;
-      }
-
-      .modal-card {
-        max-height: calc(100dvh - 16px);
-        padding: 16px;
-        border-radius: 22px;
-      }
-
-      .modal-header {
-        top: -16px;
-        margin: -16px -16px 14px;
-        padding: 16px 16px 12px;
-      }
-
       .app-shell { width: min(100% - 18px, 1480px); padding-top: 10px; }
       .topbar { grid-template-columns: 1fr; }
       .actions { justify-content: stretch; }
       .btn { width: 100%; }
       .toolbar { grid-template-columns: 1fr; }
-      .employee-list { grid-template-columns: 1fr; }
+      .employee-list { 
+        grid-template-columns: 1fr;
+        max-height: 360px;
+      }
       .stats { grid-template-columns: 1fr; }
       .form-grid { grid-template-columns: 1fr; }
     }
@@ -936,7 +732,7 @@
       </form>
 
       <div class="login-helper">
-        O usuário principal deve ser criado no Firebase Authentication com o e-mail <strong>alfafiscalto@gmail.com</strong>. A senha não fica gravada no HTML por segurança.
+        O acesso é liberado para os e-mails autorizados no código e nas regras do Firestore. Crie cada usuário no Firebase Authentication com e-mail e senha.
       </div>
     </div>
   </section>
@@ -956,12 +752,6 @@
         <span id="currentUserEmail">-</span>
       </div>
 
-      <div class="nav-title">Módulos</div>
-      <div class="nav-switch">
-        <button class="employee-btn active" data-view="tasks" id="viewTasksBtn">📋 Tarefas</button>
-        <button class="employee-btn" data-view="clients" id="viewClientsBtn">🏢 Clientes</button>
-        <button class="employee-btn" data-view="reports" id="viewReportsBtn">📊 Relatórios</button>
-      </div>
       <div class="nav-title">Funcionários</div>
       <div class="employee-list" id="employeeList"></div>
 
@@ -1062,97 +852,6 @@
           <div class="task-list" id="listConcluido"></div>
         </div>
       </section>
-
-      <section class="management-section" id="clientsSection">
-        <div class="section-head">
-          <div>
-            <h2>Clientes e empresas</h2>
-            <p>Selecione clientes nos serviços e cadastre novos clientes sem precisar alterar o código.</p>
-          </div>
-          <button class="btn btn-secondary" id="syncSeedClientsBtn" type="button">Importar lista inicial</button>
-        </div>
-
-        <div class="client-grid">
-          <div class="field">
-            <label for="clientAliasInput">Apelido</label>
-            <input id="clientAliasInput" placeholder="Ex.: ELETROSILOS" />
-          </div>
-          <div class="field">
-            <label for="clientNameInput">Razão social / Nome</label>
-            <input id="clientNameInput" placeholder="Nome completo do cliente" />
-          </div>
-          <div class="field">
-            <label for="clientDocumentInput">CNPJ / CPF</label>
-            <input id="clientDocumentInput" placeholder="00.000.000/0000-00" />
-          </div>
-          <button class="btn btn-primary" id="addClientBtn" type="button">+ Adicionar</button>
-        </div>
-
-        <div class="field" style="margin-bottom: 12px;">
-          <input type="search" id="clientSearchInput" placeholder="Buscar cliente por apelido, razão social ou documento..." />
-        </div>
-
-        <div class="client-table-wrap">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Apelido</th>
-                <th>Razão social / Nome</th>
-                <th>CNPJ / CPF</th>
-                <th>Origem</th>
-              </tr>
-            </thead>
-            <tbody id="clientsTableBody"></tbody>
-          </table>
-        </div>
-      </section>
-
-      <section class="management-section" id="reportsSection">
-        <div class="section-head">
-          <div>
-            <h2>Relatórios mensais</h2>
-            <p>Resumo mensal por funcionário, status, prazo e cliente. O relatório considera a <strong>data do pedido</strong>.</p>
-          </div>
-          <button class="btn btn-secondary" id="exportReportBtn" type="button">Exportar CSV</button>
-        </div>
-
-        <div class="report-grid">
-          <div class="field">
-            <label for="reportMonthInput">Mês do relatório</label>
-            <input type="month" id="reportMonthInput" />
-          </div>
-          <div class="field">
-            <label for="reportEmployeeInput">Funcionário</label>
-            <select id="reportEmployeeInput">
-              <option value="todos">Todos</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="reportClientInput">Cliente</label>
-            <input id="reportClientInput" list="clientDatalist" placeholder="Todos os clientes" />
-          </div>
-          <button class="btn btn-primary" id="generateReportBtn" type="button">Gerar</button>
-        </div>
-
-        <div class="mini-kpis" id="reportKpis"></div>
-
-        <div class="report-table-wrap">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Data</th>
-                <th>Cliente</th>
-                <th>Serviço</th>
-                <th>Funcionário</th>
-                <th>Status</th>
-                <th>Prazo</th>
-                <th>Prioridade</th>
-              </tr>
-            </thead>
-            <tbody id="reportTableBody"></tbody>
-          </table>
-        </div>
-      </section>
     </main>
   </div>
 
@@ -1187,11 +886,6 @@
             </select>
           </div>
           <div class="field full">
-            <label for="clientInput">Cliente / Empresa</label>
-            <input type="text" id="clientInput" list="clientDatalist" placeholder="Digite para buscar ou selecione um cliente" />
-            <datalist id="clientDatalist"></datalist>
-          </div>
-          <div class="field full">
             <label for="serviceTypeInput">Tipo de serviço</label>
             <input type="text" id="serviceTypeInput" placeholder="Ex.: SPED Fiscal, DCTFWeb, lançamento de notas, atendimento ao cliente..." required />
           </div>
@@ -1210,10 +904,6 @@
           <div class="field">
             <label for="observationInput">Observação</label>
             <input type="text" id="observationInput" placeholder="Ex.: cliente aguardando, urgente, conferir com chefe..." />
-          </div>
-          <div class="field full">
-            <label for="attachmentsInput">Anexos</label>
-            <input type="file" id="attachmentsInput" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.xml,.txt" />
           </div>
         </div>
         <div class="actions" style="margin-top: 16px;">
@@ -1246,12 +936,6 @@
       query,
       orderBy
     } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
-    import {
-      getStorage,
-      ref as storageRef,
-      uploadBytes,
-      getDownloadURL
-    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js";
 
     const employees = [
       { name: "Henrique", color: "#ef4444" },
@@ -1283,629 +967,6 @@
       "julyanarocha@unitins.br": { name: "Julyana", role: "Funcionária", employee: "Julyana" }
     };
 
-    const initialClients = [
-      {
-            "alias": "ACADEMIA MEGA FIT",
-            "name": "ACADEMIA MEGA FIT LTDA",
-            "document": "38.303.484/0001-10"
-      },
-      {
-            "alias": "ACCCD",
-            "name": "ASSOCIACAO COMUNITARIA CULTURAL DE COMUNICACAO DE DIVINOPOLIS DO TOCANTINS - ACCCD",
-            "document": "51.406.476/0001-68"
-      },
-      {
-            "alias": "ADEDIV",
-            "name": "ADEDIV - ASSEMBLEIA DE DEUS DA DIVINOPOLIS - CIADSETA - CAMPO DIVINOPOLIS DO TOCANTINS",
-            "document": "28.900.134/0001-88"
-      },
-      {
-            "alias": "ADELVINO CARLOS DE S",
-            "name": "ADELVINO CARLOS DE SAUZA",
-            "document": "663.158.591/003-25"
-      },
-      {
-            "alias": "AEL",
-            "name": "ASSOCIACAO DOS EMPRESARIOS DE LAJEADO -TO - AEL",
-            "document": "61.451.665/0001-06"
-      },
-      {
-            "alias": "AGRO ANDRADE CASEARA",
-            "name": "LUIZ FERNANDO DE ANDRADE",
-            "document": "34.667.334/0002-16"
-      },
-      {
-            "alias": "AGRO COSTA PRODUTOS",
-            "name": "S R COSTA PRODUTOS AGROPECUARIOS",
-            "document": "65.868.075/0001-34"
-      },
-      {
-            "alias": "AGRO LOPES REPRESENT",
-            "name": "AGRO LOPES REPRESENTACAO LTDA",
-            "document": "52.826.136/0001-59"
-      },
-      {
-            "alias": "AGROP. DIVINOPOLIS",
-            "name": "ELCIO CASTRO CARVALHO EIRELI",
-            "document": "36.239.345/0001-40"
-      },
-      {
-            "alias": "AGROPECUÁRIA ANDRADE",
-            "name": "LUIZ FERNANDO DE ANDRADE - ME",
-            "document": "34.667.334/0001-35"
-      },
-      {
-            "alias": "ALFA CONTABILIDADE",
-            "name": "ALFA CONTABILIDADE E CONSULTORIA LTDA",
-            "document": "65.396.606/0001-33"
-      },
-      {
-            "alias": "ALFRA CONSTRUTORA",
-            "name": "ALFRA CONSTRUTORA LTDA",
-            "document": "41.451.186/0001-82"
-      },
-      {
-            "alias": "AMA FITNES",
-            "name": "AMA FITNESS ACADEMIA DE MUSCULACAO AVANCADA LTDA",
-            "document": "51.447.667/0001-78"
-      },
-      {
-            "alias": "AMBYENTE",
-            "name": "JADER FELIPE DE ALMEIDA BRITO LTDA",
-            "document": "35.297.107/0001-28"
-      },
-      {
-            "alias": "ARAGUAIA GAS",
-            "name": "JAWSON WALLACE MENEZES SANTOS",
-            "document": "25.247.435/0002-47"
-      },
-      {
-            "alias": "ARR BOTELHO EMPREEND",
-            "name": "ARR BOTELHO EMPREENDIMENTOS IMOBILIARIOS LTDA",
-            "document": "10.313.902/0001-31"
-      },
-      {
-            "alias": "ASSENT.  PALMERINHA",
-            "name": "ASSOCIACAO DOS PEQUENOS PRODUTORES RURAIS DO PROJETO DE ASSENTAMENTO PALMERINHA",
-            "document": "04.142.768/0001-50"
-      },
-      {
-            "alias": "ASSOC. C. LUZ E VIDA",
-            "name": "ASSOCIACAO COMUNITARIA LUZ E VIDA - ACLV",
-            "document": "03.130.294/0001-64"
-      },
-      {
-            "alias": "ASSOCIACAO RADIO LAG",
-            "name": "ASSOCIACAO RADIO COMUNITARIA CRIATIVA FM",
-            "document": "08.092.134/0001-91"
-      },
-      {
-            "alias": "ASSOCIACAO SÃO FELIX",
-            "name": "ASSOCIACAO COMERCIAL E EMPRESARIAL DE SAO FELIX DO TOCANTINS",
-            "document": "58.451.852/0001-85"
-      },
-      {
-            "alias": "ATF COLHEITAS",
-            "name": "A FERREIRA",
-            "document": "48.945.376/0001-03"
-      },
-      {
-            "alias": "AUTO MECANICA ALVES",
-            "name": "T F FEITOZA LTDA",
-            "document": "37.861.014/0001-00"
-      },
-      {
-            "alias": "AUTO MOLAS CAPELÃO",
-            "name": "BENTO DIEGO DA S COSTA LTDA",
-            "document": "48.153.979/0001-64"
-      },
-      {
-            "alias": "BARATÃO SUPERMERCADO",
-            "name": "29.524.989 ARNOU ARAUJO ROCHA",
-            "document": "29.524.989/0001-14"
-      },
-      {
-            "alias": "C J B DE BRITO E CIA",
-            "name": "C J B DE BRITO E CIA LTDA",
-            "document": "08.853.179/0001-31"
-      },
-      {
-            "alias": "CENTRAL DISTRIBUIDOR",
-            "name": "LUCAS DA SILVA ALVES EIRELI",
-            "document": "38.828.053/0001-78"
-      },
-      {
-            "alias": "CERAMICA DONA MARIA",
-            "name": "W GOMES WANDERLEY LTDA",
-            "document": "27.854.450/0001-06"
-      },
-      {
-            "alias": "CERAMICA PIEDADE",
-            "name": "HAMILTON EDSON ARAUJO",
-            "document": "42.013.389/0001-50"
-      },
-      {
-            "alias": "COM. COMPRE BEM",
-            "name": "REGES S CORDEIRO EIRELI",
-            "document": "43.107.220/0001-21"
-      },
-      {
-            "alias": "COMERCIAL BARBOSA",
-            "name": "BARBOSA & DIAS LTDA",
-            "document": "05.525.388/0001-68"
-      },
-      {
-            "alias": "COMERCIAL CUPIM",
-            "name": "J L P DE SOUZA",
-            "document": "10.922.807/0001-35"
-      },
-      {
-            "alias": "COMERCIAL SURUBIM",
-            "name": "CECILIO D S CARVALHO LTDA",
-            "document": "48.997.510/0001-01"
-      },
-      {
-            "alias": "CONNECTMAIS",
-            "name": "ROMARIO DA SILVA CABRAL EIRELI - ME",
-            "document": "27.502.083/0001-73"
-      },
-      {
-            "alias": "CONTRUTORA LD",
-            "name": "M D V COELHO LTDA",
-            "document": "47.857.688/0001-94"
-      },
-      {
-            "alias": "CONVENIENCIA LOPES",
-            "name": "CLAUDIO LOPES DO COUTO EIRELI",
-            "document": "31.844.140/0001-70"
-      },
-      {
-            "alias": "COOP. DOS GARIMPEIRO",
-            "name": "COOPERATIVA DOS GARIMPEIROS DO TOCANTINS",
-            "document": "36.669.397/0001-56"
-      },
-      {
-            "alias": "D’AGRO",
-            "name": "D’AGRO REPRESENTAÇÕES TECNOLOGIA AGRÍCOLA E SERVIÇOS LTDA",
-            "document": "57.955.714/0001-70"
-      },
-      {
-            "alias": "DCONEKTE",
-            "name": "DCONEKTE MULTIMIDIA LTDA",
-            "document": "15.097.886/0001-00"
-      },
-      {
-            "alias": "DCONEKTE FILIAL",
-            "name": "DCONEKTE MULTIMIDIA LTDA",
-            "document": "15.097.886/0002-91"
-      },
-      {
-            "alias": "DENES DECORAÇÕES",
-            "name": "V LIMA DE OLIVEIRA LTDA",
-            "document": "51.826.723/0001-85"
-      },
-      {
-            "alias": "DERMALASER",
-            "name": "ISNARA RIBEIRO FONTES LTDA",
-            "document": "39.669.723/0001-13"
-      },
-      {
-            "alias": "DIST. EN. AMIGOS",
-            "name": "JOSE DINO A ROSA",
-            "document": "32.603.725/0001-60"
-      },
-      {
-            "alias": "DISTRIBUID. PRECOBOM",
-            "name": "A MOREIRA DA SILVA LTDA",
-            "document": "57.826.783/0001-84"
-      },
-      {
-            "alias": "DK FABRICA DE DOCES",
-            "name": "K A COMERCIO E EMPREENDIMENTOS LTDA",
-            "document": "36.374.797/0001-34"
-      },
-      {
-            "alias": "EDIANE BRITO SHOWROO",
-            "name": "E FERREIRA BRITO LTDA",
-            "document": "51.501.129/0001-14"
-      },
-      {
-            "alias": "ELETRO LEO",
-            "name": "JOSE LEONARDO SIQUEIRA",
-            "document": "48.705.037/0001-41"
-      },
-      {
-            "alias": "ELETRO LIDER",
-            "name": "N MOREIRA DOS SANTOS",
-            "document": "45.321.347/0001-74"
-      },
-      {
-            "alias": "ELETROSILOS",
-            "name": "ELETROSILOS LTDA",
-            "document": "62.451.934/0001-05"
-      },
-      {
-            "alias": "EMPREITEIRA J F NOVA",
-            "name": "J FRANCISCO P S LTDA",
-            "document": "66.500.791/0001-27"
-      },
-      {
-            "alias": "EMPREITERA JOSE FRAN",
-            "name": "J FRANCISCO PEREIRA DA SILVA LTDA",
-            "document": "53.504.066/0001-85"
-      },
-      {
-            "alias": "ENGENORT",
-            "name": "ENGENORT CONSTRUTORA LTDA",
-            "document": "55.145.334/0001-45"
-      },
-      {
-            "alias": "EVOLUT ENGENHARIA",
-            "name": "EVOLUT ENGENHARIA LTDA",
-            "document": "65.845.357/0001-16"
-      },
-      {
-            "alias": "FABIO COLHEITAS",
-            "name": "27.096.961 FABIO OLIVEIRA FERREIRA",
-            "document": "27.096.961/0001-06"
-      },
-      {
-            "alias": "FAZ. VALE DA PROMESS",
-            "name": "FAZENDA VALE DA PROMESSA",
-            "document": "008.078.401/001-26"
-      },
-      {
-            "alias": "FAZENDA BOA VISTA",
-            "name": "WAINER GOMES WANDERLEY",
-            "document": "158.925.731/001-18"
-      },
-      {
-            "alias": "FAZENDA BURITI",
-            "name": "DIVINO EUGENIO DOS SANTOS",
-            "document": "382.064.201/001-67"
-      },
-      {
-            "alias": "FAZENDA NOVO HORIZON",
-            "name": "LUIZ ANTONIO MIRANDA",
-            "document": "328.421.639/001-21"
-      },
-      {
-            "alias": "FAZENDA SÃO JOSE",
-            "name": "ADARCIRI GONCALVES MOREIRA",
-            "document": "044.916.291/001-08"
-      },
-      {
-            "alias": "FP PRODUCOES",
-            "name": "F S FERREIRA LTDA",
-            "document": "21.072.243/0001-05"
-      },
-      {
-            "alias": "GAS SUPER 10",
-            "name": "JAWSON WALLACE MENEZES SANTOS",
-            "document": "25.247.435/0001-66"
-      },
-      {
-            "alias": "GS SOLUCOES E EVENTO",
-            "name": "GS LOCAÇÕES LTDA",
-            "document": "14.841.840/0001-91"
-      },
-      {
-            "alias": "HL PISCINAS",
-            "name": "ADELVINO CARLOS DE SOUZA",
-            "document": "42.308.433/0001-59"
-      },
-      {
-            "alias": "HL PISCINAS FILIAL",
-            "name": "A C DE SOUZA LTDA",
-            "document": "42.308.433/0002-30"
-      },
-      {
-            "alias": "HOTEL GOIANO",
-            "name": "E C DOS SANTOS FERREIRA",
-            "document": "36.253.262/0001-05"
-      },
-      {
-            "alias": "IGREJA CRISTO E VIDA",
-            "name": "IGREJA ASSEMBLEIA DE DEUS MINISTERIO CRISTO E VIDA",
-            "document": "37.128.627/0001-32"
-      },
-      {
-            "alias": "IGREJA EXERCITO DE D",
-            "name": "IGREJA PENTECOSTAL EXERCITO DE DEUS",
-            "document": "24.757.013/0001-78"
-      },
-      {
-            "alias": "IGREJA METANOIA",
-            "name": "IGREJA ASSEMBLEIA DE DEUS PROJETO METANOIA MISSOES SEM FRONTEIRAS - IADPMF",
-            "document": "31.540.112/0001-69"
-      },
-      {
-            "alias": "IGREJA RENASCER",
-            "name": "IGREJA ASSEMBLEIA DE DEUS RENASCER - IADR",
-            "document": "48.340.804/0001-66"
-      },
-      {
-            "alias": "IMOB FAZENDAS TOCANT",
-            "name": "G R PEREIRA LTDA",
-            "document": "44.041.372/0001-31"
-      },
-      {
-            "alias": "J CARDOSO DE SA",
-            "name": "J CARDOSO DE SA LTDA",
-            "document": "18.342.525/0001-70"
-      },
-      {
-            "alias": "JC INFORMATICA",
-            "name": "I D LIMA LTDA",
-            "document": "42.232.921/0001-20"
-      },
-      {
-            "alias": "JH EMPREENDIMENTOS",
-            "name": "JOSE HENRIQUE DE ALMEIDA BRITO",
-            "document": "24.579.102/0001-71"
-      },
-      {
-            "alias": "JK SERVICOS DE CONST",
-            "name": "JK SERVICOS DE CONSTRUTORA LTDA",
-            "document": "26.890.071/0001-09"
-      },
-      {
-            "alias": "JSC MATERIAS",
-            "name": "JOSE CARLOS SILVA LOBO EIRELI",
-            "document": "32.482.346/0001-60"
-      },
-      {
-            "alias": "KYNAR COMUNICACAO",
-            "name": "KYNAR COMUNICACAO VISUAL LTDA",
-            "document": "48.761.179/0001-26"
-      },
-      {
-            "alias": "LIMIAR",
-            "name": "PAULO ANTONIO DA SILVA",
-            "document": "41.544.293/0001-55"
-      },
-      {
-            "alias": "LIMPISCINAS",
-            "name": "EDIMILSON LOPES DA CRUZ",
-            "document": "01.129.611/0001-05"
-      },
-      {
-            "alias": "LUIZ CLAUDIO",
-            "name": "LUIZ CLAUDIO REZENDE DE AZEVEDO",
-            "document": "35.934.583/0001-02"
-      },
-      {
-            "alias": "M G DE SOUZA LTDA",
-            "name": "M G DE SOUZA LTDA",
-            "document": "48.581.887/0001-85"
-      },
-      {
-            "alias": "M. O. MUNCK E TRANSP",
-            "name": "M.O.M. DA ROSA",
-            "document": "15.740.818/0001-18"
-      },
-      {
-            "alias": "MANAS VARIEDADES",
-            "name": "IRACELIA AIRES WANDERLEY 03469564124",
-            "document": "42.253.854/0001-20"
-      },
-      {
-            "alias": "MARCOS CARVALHO",
-            "name": "MARCOS CARVALHO MARIANO",
-            "document": "005.366.111/001-14"
-      },
-      {
-            "alias": "MARI K AVIAMENT",
-            "name": "MARI K AVIAMENTOS LTDA",
-            "document": "55.061.621/0001-77"
-      },
-      {
-            "alias": "MAT TONHÃO",
-            "name": "A BOMFIM DA SILVA RODRIGUES LTDA",
-            "document": "47.598.506/0001-08"
-      },
-      {
-            "alias": "MAYCON DIAGNOSTICO",
-            "name": "MAYCON DIAGNOSTICO LTDA",
-            "document": "61.110.586/0001-31"
-      },
-      {
-            "alias": "MERCEARIA ZORO",
-            "name": "Z MENDES DE CARVALHO LTDA",
-            "document": "60.299.566/0001-98"
-      },
-      {
-            "alias": "MINEBR NATIVIDADE",
-            "name": "MINEBR NATIVIDADE LTDA",
-            "document": "46.593.966/0001-80"
-      },
-      {
-            "alias": "MUNDIAL PNEUS",
-            "name": "VALTER RODRIGUES OLIVEIRA - ME",
-            "document": "27.905.815/0001-76"
-      },
-      {
-            "alias": "NETO",
-            "name": "ANTONIO ALVES DE ALMEIDA NETO",
-            "document": "26.941.466/0001-85"
-      },
-      {
-            "alias": "NOGUEIRA ELETRICA",
-            "name": "NOGUEIRA CONSTRUCOES E INFRAESTRUTURA LTDA",
-            "document": "33.685.328/0001-48"
-      },
-      {
-            "alias": "NORTE & NORDESTE",
-            "name": "NORTE & NORDESTE MINERIOS DO BRASIL LTDA",
-            "document": "57.296.867/0001-53"
-      },
-      {
-            "alias": "NORTE NAPAS",
-            "name": "C P DE ARAUJO LTDA",
-            "document": "43.677.280/0001-80"
-      },
-      {
-            "alias": "NUTRI MAIS",
-            "name": "RESTAURANTE E LANCHONETE NUTRI MAIS LTDA",
-            "document": "49.931.842/0001-56"
-      },
-      {
-            "alias": "OTICA ALTO OLHAR PSO",
-            "name": "L S FERREIRA LTDA",
-            "document": "18.409.866/0003-88"
-      },
-      {
-            "alias": "OTICA NOVO OLHAR",
-            "name": "L S FERREIRA LTDA",
-            "document": "18.409.866/0001-16"
-      },
-      {
-            "alias": "OTICA NOVO OLHAR DIV",
-            "name": "L S FERREIRA LTDA",
-            "document": "18.409.866/0002-05"
-      },
-      {
-            "alias": "OTICAS ALTO OLHAR",
-            "name": "41.514.982 JOAO OLIVEIRA DE ALENCAR",
-            "document": "41.514.982/0001-17"
-      },
-      {
-            "alias": "OTICAS SANTANA",
-            "name": "49.057.074 HEITOR SOARES FERREIRA",
-            "document": "49.057.074/0001-53"
-      },
-      {
-            "alias": "PANIFICADORA TOCANTI",
-            "name": "PAULO ALVES DOS SANTOS",
-            "document": "33.090.554/0001-86"
-      },
-      {
-            "alias": "PÃO IMPERIO PANIFICA",
-            "name": "S DE OLIVEIRA SOUZA LTDA",
-            "document": "34.466.799/0001-28"
-      },
-      {
-            "alias": "PEDRA BRANCA",
-            "name": "PEDRA BRANCA MATERIAL DE CONSTRUCAO LTDA",
-            "document": "24.776.447/0001-15"
-      },
-      {
-            "alias": "POLO AGRO",
-            "name": "POLO DEFENSIVOS AGRICOLAS E FERRAGISTA LTDA",
-            "document": "34.104.358/0001-86"
-      },
-      {
-            "alias": "PONTO DA PACOCA",
-            "name": "MARCELO FARIAS DE OLIVEIRA 24150967253",
-            "document": "26.634.305/0001-49"
-      },
-      {
-            "alias": "POSTO DE MEDICAMENTO",
-            "name": "F TAVARES PEREIRA LTDA",
-            "document": "56.900.670/0001-19"
-      },
-      {
-            "alias": "POUSADA POR DO SOL",
-            "name": "POUSADA POR DO SOL LTDA",
-            "document": "59.794.076/0001-89"
-      },
-      {
-            "alias": "R. L. REPRESENTACOES",
-            "name": "R. L. REPRESENTACOES COMERCIAIS LTDA",
-            "document": "27.403.058/0001-32"
-      },
-      {
-            "alias": "RIBRAX",
-            "name": "S R DE ABREU LTDA",
-            "document": "21.359.066/0001-42"
-      },
-      {
-            "alias": "RMB PROJETOS E CONSU",
-            "name": "RMB PROJETOS E CONSULTORIA LTDA",
-            "document": "20.476.712/0001-99"
-      },
-      {
-            "alias": "RODRIGUES BARBEARIA",
-            "name": "RODRIGUES BARBEARIA LTDA",
-            "document": "43.606.750/0001-14"
-      },
-      {
-            "alias": "S R MARIANOPOLIS F1",
-            "name": "S R DE ABREU LTDA",
-            "document": "21.359.066/0002-23"
-      },
-      {
-            "alias": "SANTA CLARA C DOS SA",
-            "name": "C DOS SANTOS CARVALHO",
-            "document": "29.860.447/0001-12"
-      },
-      {
-            "alias": "SANTA CLARA NETO",
-            "name": "SANTA CLARA SERVICOS E LOCACOES LTDA",
-            "document": "55.804.658/0001-48"
-      },
-      {
-            "alias": "SÃO PEDRO EMPREENDIM",
-            "name": "LL WANDERLEY - ME",
-            "document": "35.230.650/0001-08"
-      },
-      {
-            "alias": "SINDICATO TRAB. DIV.",
-            "name": "SINDICATO DOS TRABALHADORES E TRABALHADORAS RURAIS AGRICULTORES E AGRICULTORAS FAMILIARES DE DIVINOPOLIS DO TOCANTINS - TO",
-            "document": "24.852.063/0001-34"
-      },
-      {
-            "alias": "SONHO DE CRIANÇA",
-            "name": "M V A SANTOS LTDA",
-            "document": "08.332.823/0001-26"
-      },
-      {
-            "alias": "SOS BORRACHARIA",
-            "name": "JOSE PEREIRA DA SILVA",
-            "document": "13.994.861/0001-84"
-      },
-      {
-            "alias": "TIAGO MIGUEL SILVANI",
-            "name": "TIAGO MIGUEL SILVANI",
-            "document": "100.130.216/002-20"
-      },
-      {
-            "alias": "TORNEADORA ALADIM",
-            "name": "DERGILIO GOMES DA SILVA - ME",
-            "document": "24.201.900/0001-65"
-      },
-      {
-            "alias": "VESTY FASHION",
-            "name": "IRAILDE AIRES WANDERLEY",
-            "document": "15.152.303/0001-05"
-      },
-      {
-            "alias": "VIVEIRO JARDIM PARIS",
-            "name": "RAIMUNDO F DA SILVA LTDA",
-            "document": "22.850.794/0001-15"
-      },
-      {
-            "alias": "WSC CONSTRUTORA",
-            "name": "WSC CONSTUTORA LTDA",
-            "document": "64.470.327/0001-00"
-      },
-      {
-            "alias": "WSC ENGENHARIA",
-            "name": "WSC ENGENHARIA GEOLOGIA SERVICOS AMBIENTAIS E REPRESENTACOES LTDA",
-            "document": "48.168.684/0001-61"
-      },
-      {
-            "alias": "WSC MINERACAO & MEIO",
-            "name": "WSC MINERACAO & MEIO AMBIENTE LTDA",
-            "document": "59.090.155/0001-09"
-      },
-      {
-            "alias": "Y O WATANABE",
-            "name": "Y O WATANABE LTDA",
-            "document": "64.137.551/0001-84"
-      }
-];
-
     function normalizeEmail(email) {
       return String(email || "").trim().toLowerCase();
     }
@@ -1918,23 +979,33 @@
       CONFIGURAÇÃO NECESSÁRIA NO FIREBASE
 
       1) Firebase Console > Authentication > Sign-in method > habilite Email/Password.
-      2) Authentication > Users > Add user:
-         E-mail: alfafiscalto@gmail.com
-         Senha: defina a senha principal informada pelo escritório.
+      2) Authentication > Users > Add user para cada pessoa autorizada.
       3) Firestore Database > Create database.
-      4) Regras recomendadas para liberar somente usuário logado:
+      4) Regras recomendadas para liberar somente os e-mails autorizados:
 
       rules_version = '2';
       service cloud.firestore {
         match /databases/{database}/documents {
+          function signedIn() {
+            return request.auth != null;
+          }
+
+          function allowedUser() {
+            return signedIn()
+              && request.auth.token.email in [
+                'alfafiscalto@gmail.com',
+                'rebcaravila@gmail.com'
+              ];
+          }
+
           match /tarefas/{document=**} {
-            allow read, write: if request.auth != null
-              && request.auth.token.email == 'alfafiscalto@gmail.com';
+            allow read, write: if allowedUser();
           }
         }
       }
 
-      5) Copie as credenciais do app Web e substitua o objeto firebaseConfig abaixo.
+      5) Todo usuário novo precisa ser criado no Authentication e incluído em allowedUserEmails + nas regras acima.
+      6) Copie as credenciais do app Web e substitua o objeto firebaseConfig abaixo.
     */
     const firebaseConfig = {
       apiKey: "AIzaSyCMLD4nzWvBzL7WHbQnGVl2a3sFmC7WmsY",
@@ -1948,12 +1019,8 @@
     let app = null;
     let auth = null;
     let db = null;
-    let storage = null;
     let unsubscribe = null;
-    let unsubscribeClients = null;
     let tasks = [];
-    let clients = initialClients.map(client => ({ ...client, source: "planilha" }));
-    let currentReportRows = [];
     let selectedEmployee = "todos";
     let editingTaskId = null;
     let firebaseReady = false;
@@ -1974,14 +1041,6 @@
     const connectionText = document.getElementById("connectionText");
     const firebaseWarning = document.getElementById("firebaseWarning");
     const currentUserEmail = document.getElementById("currentUserEmail");
-    const clientsSection = document.getElementById("clientsSection");
-    const reportsSection = document.getElementById("reportsSection");
-    const taskSections = [
-      document.querySelector(".topbar"),
-      document.querySelector(".stats"),
-      document.querySelector(".toolbar"),
-      document.querySelector(".board")
-    ];
 
     const statusLabels = {
       pendente: "Pendente",
@@ -2020,177 +1079,6 @@
       connectionText.textContent = message;
     }
 
-
-
-    function clientLabel(client) {
-      if (!client) return "";
-      const alias = client.alias || client.name || "Cliente";
-      return client.document ? `${alias} — ${client.document}` : alias;
-    }
-
-    function normalizeClientKey(client) {
-      return `${String(client.document || "").replace(/\D/g, "")}|${String(client.alias || client.name || "").trim().toUpperCase()}`;
-    }
-
-    function getMergedClients(extraClients = []) {
-      const map = new Map();
-      [...initialClients.map(c => ({ ...c, source: "planilha" })), ...extraClients].forEach(client => {
-        const key = normalizeClientKey(client);
-        if (!key || key === "|") return;
-        map.set(key, { ...client, source: client.source || "firebase" });
-      });
-      return Array.from(map.values()).sort((a, b) => String(a.alias || a.name).localeCompare(String(b.alias || b.name), "pt-BR"));
-    }
-
-    function buildClientDatalist() {
-      const datalist = document.getElementById("clientDatalist");
-      if (!datalist) return;
-      datalist.innerHTML = clients.map(client => `<option value="${escapeHTML(clientLabel(client))}"></option>`).join("");
-    }
-
-    function parseClientInput(value) {
-      const input = String(value || "").trim();
-      if (!input) return { alias: "", name: "", document: "" };
-      const found = clients.find(client => clientLabel(client) === input)
-        || clients.find(client => [client.alias, client.name, client.document].some(field => String(field || "").trim().toLowerCase() === input.toLowerCase()));
-      if (found) return { alias: found.alias || "", name: found.name || "", document: found.document || "" };
-      return { alias: input, name: input, document: "" };
-    }
-
-    function renderClients() {
-      buildClientDatalist();
-      const tbody = document.getElementById("clientsTableBody");
-      if (!tbody) return;
-      const search = document.getElementById("clientSearchInput")?.value.trim().toLowerCase() || "";
-      const filtered = clients.filter(client => [client.alias, client.name, client.document, client.source]
-        .join(" ").toLowerCase().includes(search));
-      tbody.innerHTML = filtered.map(client => `
-        <tr>
-          <td><strong>${escapeHTML(client.alias || "-")}</strong></td>
-          <td>${escapeHTML(client.name || "-")}</td>
-          <td>${escapeHTML(client.document || "-")}</td>
-          <td>${escapeHTML(client.source || "firebase")}</td>
-        </tr>
-      `).join("") || `<tr><td colspan="4">Nenhum cliente encontrado.</td></tr>`;
-    }
-
-    async function addClient() {
-      if (!firebaseReady || !currentUser) {
-        showToast("Faça login antes de adicionar clientes.");
-        return;
-      }
-      const alias = document.getElementById("clientAliasInput").value.trim();
-      const name = document.getElementById("clientNameInput").value.trim();
-      const documentNumber = document.getElementById("clientDocumentInput").value.trim();
-      if (!alias && !name) {
-        showToast("Informe pelo menos o apelido ou a razão social do cliente.");
-        return;
-      }
-      await addDoc(collection(db, "clientes"), {
-        alias: alias || name,
-        name,
-        document: documentNumber,
-        createdAt: serverTimestamp(),
-        createdBy: currentUser.email,
-        active: true
-      });
-      document.getElementById("clientAliasInput").value = "";
-      document.getElementById("clientNameInput").value = "";
-      document.getElementById("clientDocumentInput").value = "";
-      showToast("Cliente adicionado com sucesso.");
-    }
-
-    async function syncSeedClients() {
-      if (!firebaseReady || !currentUser) {
-        showToast("Faça login antes de importar clientes.");
-        return;
-      }
-      const confirmSync = confirm(`Importar ${initialClients.length} clientes da planilha para o Firestore? Faça isso apenas uma vez.`);
-      if (!confirmSync) return;
-      let count = 0;
-      for (const client of initialClients) {
-        await addDoc(collection(db, "clientes"), {
-          ...client,
-          createdAt: serverTimestamp(),
-          createdBy: currentUser.email,
-          source: "planilha",
-          active: true
-        });
-        count += 1;
-      }
-      showToast(`${count} clientes enviados para o Firestore.`);
-    }
-
-    function setView(view) {
-      document.querySelectorAll("[data-view]").forEach(btn => btn.classList.toggle("active", btn.dataset.view === view));
-      taskSections.forEach(section => { if (section) section.style.display = view === "tasks" ? "" : "none"; });
-      clientsSection.classList.toggle("active", view === "clients");
-      reportsSection.classList.toggle("active", view === "reports");
-      if (view === "clients") renderClients();
-      if (view === "reports") generateReport();
-    }
-
-    function monthValue(dateString) {
-      return String(dateString || "").slice(0, 7);
-    }
-
-    function generateReport() {
-      const month = document.getElementById("reportMonthInput").value || todayISO().slice(0, 7);
-      const employee = document.getElementById("reportEmployeeInput").value;
-      const clientInput = document.getElementById("reportClientInput").value.trim().toLowerCase();
-      currentReportRows = tasks.filter(task => {
-        const byMonth = monthValue(task.requestDate) === month;
-        const byEmployee = employee === "todos" || task.employee === employee;
-        const clientText = [task.clientAlias, task.clientName, task.clientDocument].join(" ").toLowerCase();
-        const byClient = !clientInput || clientText.includes(clientInput) || clientLabel(parseClientInput(clientInput)).toLowerCase().includes(clientInput);
-        return byMonth && byEmployee && byClient;
-      });
-
-      const total = currentReportRows.length;
-      const concluidos = currentReportRows.filter(t => t.status === "concluido").length;
-      const pendentes = currentReportRows.filter(t => t.status === "pendente").length;
-      const andamento = currentReportRows.filter(t => t.status === "andamento").length;
-      const vencidos = currentReportRows.filter(isOverdue).length;
-      document.getElementById("reportKpis").innerHTML = [
-        ["Total", total], ["Pendentes", pendentes], ["Em andamento", andamento], ["Concluídos", concluidos], ["Vencidos", vencidos]
-      ].map(([label, value]) => `<div class="mini-kpi"><span>${label}</span><strong>${value}</strong></div>`).join("");
-
-      const tbody = document.getElementById("reportTableBody");
-      tbody.innerHTML = currentReportRows.map(task => `
-        <tr>
-          <td>${formatDate(task.requestDate)}</td>
-          <td>${escapeHTML(task.clientAlias || task.clientName || "-")}</td>
-          <td><strong>${escapeHTML(task.serviceType || "-")}</strong><br><span style="color: var(--muted)">${escapeHTML(task.description || "")}</span></td>
-          <td>${escapeHTML(task.employee || "-")}</td>
-          <td>${escapeHTML(statusLabels[task.status] || task.status || "-")}</td>
-          <td>${formatDate(task.deadline)}</td>
-          <td>${escapeHTML(priorityLabels[task.priority] || task.priority || "-")}</td>
-        </tr>
-      `).join("") || `<tr><td colspan="7">Nenhuma tarefa encontrada para o mês selecionado.</td></tr>`;
-    }
-
-    function exportReportCsv() {
-      if (!currentReportRows.length) {
-        showToast("Gere um relatório com dados antes de exportar.");
-        return;
-      }
-      const rows = [["Data", "Cliente", "Documento", "Serviço", "Funcionário", "Status", "Prazo", "Prioridade"]];
-      currentReportRows.forEach(task => rows.push([
-        formatDate(task.requestDate), task.clientAlias || task.clientName || "", task.clientDocument || "", task.serviceType || "",
-        task.employee || "", statusLabels[task.status] || task.status || "", formatDate(task.deadline), priorityLabels[task.priority] || task.priority || ""
-      ]));
-      const csv = rows.map(row => row.map(value => `"${String(value).replaceAll('"', '""')}"`).join(";")).join("\n");
-      const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `relatorio-alfa-${document.getElementById("reportMonthInput").value || todayISO().slice(0,7)}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    }
-
     function buildEmployees() {
       const allBtn = document.createElement("button");
       allBtn.className = "employee-btn active";
@@ -2215,11 +1103,6 @@
         option.value = employee.name;
         option.textContent = employee.name;
         employeeInput.appendChild(option);
-
-        const reportOption = document.createElement("option");
-        reportOption.value = employee.name;
-        reportOption.textContent = employee.name;
-        document.getElementById("reportEmployeeInput")?.appendChild(reportOption);
       });
 
       employeeList.addEventListener("click", (event) => {
@@ -2241,7 +1124,7 @@
         const byEmployee = selectedEmployee === "todos" || task.employee === selectedEmployee;
         const byStatus = statusFilter === "todos" || task.status === statusFilter;
         const byPriority = priorityFilter === "todas" || task.priority === priorityFilter;
-        const text = [task.employee, task.clientAlias, task.clientName, task.clientDocument, task.serviceType, task.description, task.observation, task.status, task.priority]
+        const text = [task.employee, task.serviceType, task.description, task.observation, task.status, task.priority]
           .filter(Boolean)
           .join(" ")
           .toLowerCase();
@@ -2293,11 +1176,6 @@
       const card = document.createElement("article");
       const overdue = isOverdue(task);
       const oldRequest = task.requestDate && task.requestDate < todayISO();
-      const dueToday = task.deadline && task.status !== "concluido" && task.deadline === todayISO();
-      const attachments = Array.isArray(task.attachments) ? task.attachments : [];
-      const nextActionLabel = task.status === "pendente" ? "Iniciar" : task.status === "andamento" ? "Concluir" : "Reabrir";
-      const nextActionClass = task.status === "pendente" ? "btn-start" : task.status === "andamento" ? "btn-finish" : "btn-reopen";
-      const dueClass = overdue ? "visual-vencido" : dueToday ? "visual-hoje" : task.status === "concluido" ? "visual-ok" : "";
 
       card.className = `task-card ${overdue ? "overdue" : ""}`;
       card.style.borderTop = `3px solid ${employees.find(e => e.name === task.employee)?.color || "var(--red)"}`;
@@ -2309,30 +1187,17 @@
         </div>
         <p class="task-desc">${escapeHTML(task.description || "Sem descrição informada.")}</p>
         <div class="pill-row">
-          ${task.clientAlias || task.clientName ? `<span class="pill">🏢 ${escapeHTML(task.clientAlias || task.clientName)}</span>` : ""}
-          ${task.clientDocument ? `<span class="pill">🧾 ${escapeHTML(task.clientDocument)}</span>` : ""}
           <span class="pill">👤 ${escapeHTML(task.employee)}</span>
           <span class="pill">📅 Pedido: ${formatDate(task.requestDate)}</span>
-          <span class="pill ${dueClass}">⏳ Prazo limite: ${formatDate(task.deadline)}</span>
+          <span class="pill ${overdue ? "priority-alta" : ""}">⏳ Prazo limite: ${formatDate(task.deadline)}</span>
           <span class="pill ${task.status === "concluido" ? "success-pill" : ""}">📌 ${statusLabels[task.status] || "Pendente"}</span>
-          ${overdue ? `<span class="pill visual-vencido">⚠️ Prazo vencido</span>` : ""}
-          ${dueToday ? `<span class="pill visual-hoje">⚠️ Vence hoje</span>` : ""}
+          ${overdue ? `<span class="pill priority-alta">⚠️ Prazo vencido</span>` : ""}
           ${oldRequest ? `<span class="pill priority-media">Pedido anterior a hoje</span>` : ""}
           ${task.observation ? `<span class="pill">📝 ${escapeHTML(task.observation)}</span>` : ""}
-          ${attachments.length ? `<span class="pill">📎 ${attachments.length} anexo(s)</span>` : ""}
         </div>
-        ${attachments.length ? `
-          <div class="attachment-list">
-            ${attachments.map(file => `
-              <a class="attachment-link" href="${escapeHTML(file.url)}" target="_blank" rel="noopener">
-                📎 ${escapeHTML(file.name || "Anexo")}
-              </a>
-            `).join("")}
-          </div>
-        ` : ""}
         <div class="task-actions">
           <button class="icon-btn" data-action="edit" data-id="${task.id}">Editar</button>
-          <button class="icon-btn ${nextActionClass}" data-action="next" data-id="${task.id}">${nextActionLabel}</button>
+          <button class="icon-btn" data-action="next" data-id="${task.id}">Avançar</button>
           <button class="icon-btn danger" data-action="delete" data-id="${task.id}">Excluir</button>
         </div>
       `;
@@ -2380,7 +1245,6 @@
       employeeInput.value = task?.employee || (selectedEmployee === "todos" ? defaultEmployee : selectedEmployee);
       document.getElementById("requestDateInput").value = task?.requestDate || todayISO();
       document.getElementById("deadlineInput").value = task?.deadline || todayISO();
-      document.getElementById("clientInput").value = task ? clientLabel({ alias: task.clientAlias, name: task.clientName, document: task.clientDocument }) : "";
       document.getElementById("serviceTypeInput").value = task?.serviceType || "";
       document.getElementById("descriptionInput").value = task?.description || "";
       document.getElementById("statusInput").value = task?.status || "pendente";
@@ -2401,49 +1265,11 @@
       return "pendente";
     }
 
-
-
-    async function uploadTaskAttachments(taskId) {
-      const input = document.getElementById("attachmentsInput");
-      const files = Array.from(input.files || []);
-      if (!files.length) return [];
-      if (!storage) throw new Error("Storage não configurado.");
-
-      const uploaded = [];
-      for (const file of files) {
-        const safeName = file.name.replace(/[^\w.\-À-ÿ ]+/g, "_");
-        const path = `tarefas/${taskId}/${Date.now()}-${safeName}`;
-        const fileRef = storageRef(storage, path);
-        await uploadBytes(fileRef, file, {
-          contentType: file.type || "application/octet-stream",
-          customMetadata: {
-            uploadedBy: currentUser?.email || "",
-            originalName: file.name
-          }
-        });
-        const url = await getDownloadURL(fileRef);
-        uploaded.push({
-          name: file.name,
-          url,
-          path,
-          type: file.type || "arquivo",
-          size: file.size,
-          uploadedAt: new Date().toISOString(),
-          uploadedBy: currentUser?.email || null
-        });
-      }
-      return uploaded;
-    }
-
     async function saveTask(event) {
       event.preventDefault();
 
-      const selectedClient = parseClientInput(document.getElementById("clientInput").value);
       const payload = {
         employee: employeeInput.value,
-        clientAlias: selectedClient.alias,
-        clientName: selectedClient.name,
-        clientDocument: selectedClient.document,
         requestDate: document.getElementById("requestDateInput").value,
         deadline: document.getElementById("deadlineInput").value,
         serviceType: document.getElementById("serviceTypeInput").value.trim(),
@@ -2477,30 +1303,20 @@
 
       try {
         if (editingTaskId) {
-          const previousTask = tasks.find(item => item.id === editingTaskId);
-          const newAttachments = await uploadTaskAttachments(editingTaskId);
-          await updateDoc(doc(db, "tarefas", editingTaskId), {
-            ...payload,
-            attachments: [...(previousTask?.attachments || []), ...newAttachments]
-          });
+          await updateDoc(doc(db, "tarefas", editingTaskId), payload);
           showToast("Serviço atualizado com sucesso.");
         } else {
-          const newDoc = await addDoc(collection(db, "tarefas"), {
+          await addDoc(collection(db, "tarefas"), {
             ...payload,
-            attachments: [],
             createdAt: serverTimestamp(),
             createdBy: currentUser.email
           });
-          const newAttachments = await uploadTaskAttachments(newDoc.id);
-          if (newAttachments.length) {
-            await updateDoc(doc(db, "tarefas", newDoc.id), { attachments: newAttachments });
-          }
           showToast("Serviço criado com sucesso.");
         }
         closeModal();
       } catch (error) {
         console.error(error);
-        showToast("Não foi possível salvar. Confira as regras do Firestore/Storage e a configuração Firebase.");
+        showToast("Não foi possível salvar. Confira as regras do Firestore e a configuração Firebase.");
       }
     }
 
@@ -2522,15 +1338,11 @@
       }
 
       if (button.dataset.action === "next") {
-        const nextStatus = getNextStatus(task.status);
-        const confirmChange = confirm(`Confirmar alteração do status para "${statusLabels[nextStatus]}"?`);
-        if (!confirmChange) return;
         await updateDoc(doc(db, "tarefas", task.id), {
-          status: nextStatus,
+          status: getNextStatus(task.status),
           updatedAt: serverTimestamp(),
           updatedBy: currentUser.email
         });
-        showToast(`Status alterado para ${statusLabels[nextStatus]}.`);
         return;
       }
 
@@ -2580,7 +1392,6 @@
       appShell.classList.add("visible");
       setConnection("online", "Conectado ao Firebase");
       listenTasks();
-      listenClients();
     }
 
     function showLogin() {
@@ -2590,11 +1401,8 @@
       appShell.classList.remove("visible");
       loginScreen.style.display = "grid";
       if (unsubscribe) unsubscribe();
-      if (unsubscribeClients) unsubscribeClients();
       tasks = [];
-      clients = initialClients.map(client => ({ ...client, source: "planilha" }));
       render();
-      renderClients();
     }
 
     function listenTasks() {
@@ -2610,23 +1418,6 @@
       });
     }
 
-
-
-    function listenClients() {
-      if (unsubscribeClients) unsubscribeClients();
-      unsubscribeClients = onSnapshot(collection(db, "clientes"), (snapshot) => {
-        const firebaseClients = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data(), source: "firebase" }));
-        clients = getMergedClients(firebaseClients);
-        renderClients();
-        buildClientDatalist();
-      }, (error) => {
-        console.error(error);
-        showToast("Não foi possível carregar a lista de clientes do Firestore.");
-        clients = getMergedClients([]);
-        renderClients();
-      });
-    }
-
     function startFirebase() {
       if (!isFirebaseConfigured()) {
         setConnection("offline", "Firebase não configurado");
@@ -2637,7 +1428,6 @@
         app = initializeApp(firebaseConfig);
         auth = getAuth(app);
         db = getFirestore(app);
-        storage = getStorage(app);
         firebaseReady = true;
         firebaseWarning.style.display = "none";
         setConnection("online", "Firebase pronto para login");
@@ -2657,16 +1447,6 @@
       }
     }
 
-    function debounce(fn, delay = 120) {
-      let timer = null;
-      return (...args) => {
-        window.clearTimeout(timer);
-        timer = window.setTimeout(() => fn(...args), delay);
-      };
-    }
-
-    const debouncedRender = debounce(render, 120);
-
     document.getElementById("loginForm").addEventListener("submit", handleLogin);
     document.getElementById("logoutBtn").addEventListener("click", handleLogout);
     document.getElementById("openModalBtn").addEventListener("click", () => openModal());
@@ -2677,19 +1457,10 @@
       document.querySelectorAll(".employee-btn").forEach(item => item.classList.toggle("active", item.dataset.employee === "todos"));
       render();
     });
-    document.getElementById("searchInput").addEventListener("input", debouncedRender);
+    document.getElementById("searchInput").addEventListener("input", render);
     document.getElementById("statusFilter").addEventListener("change", render);
     document.getElementById("priorityFilter").addEventListener("change", render);
     document.querySelector(".board").addEventListener("click", handleTaskAction);
-    document.getElementById("viewTasksBtn").addEventListener("click", () => setView("tasks"));
-    document.getElementById("viewClientsBtn").addEventListener("click", () => setView("clients"));
-    document.getElementById("viewReportsBtn").addEventListener("click", () => setView("reports"));
-    document.getElementById("addClientBtn").addEventListener("click", addClient);
-    document.getElementById("syncSeedClientsBtn").addEventListener("click", syncSeedClients);
-    document.getElementById("clientSearchInput").addEventListener("input", renderClients);
-    document.getElementById("generateReportBtn").addEventListener("click", generateReport);
-    document.getElementById("exportReportBtn").addEventListener("click", exportReportCsv);
-    document.getElementById("reportMonthInput").value = todayISO().slice(0, 7);
     taskForm.addEventListener("submit", saveTask);
     taskModal.addEventListener("click", event => {
       if (event.target === taskModal) closeModal();
@@ -2701,7 +1472,6 @@
 
     window.addEventListener("beforeunload", () => {
       if (unsubscribe) unsubscribe();
-      if (unsubscribeClients) unsubscribeClients();
     });
   </script>
 </body>
