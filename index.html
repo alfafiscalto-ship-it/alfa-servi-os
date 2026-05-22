@@ -200,6 +200,13 @@
       font-weight: 500;
     }
 
+    .brand,
+    .user-box,
+    .nav-title,
+    .config-box {
+      flex-shrink: 0;
+    }
+
     .nav-title {
       margin: 22px 0 10px;
       color: var(--muted-2);
@@ -212,6 +219,25 @@
     .employee-list {
       display: grid;
       gap: 10px;
+      min-height: 0;
+      max-height: calc(100vh - 370px);
+      overflow-y: auto;
+      padding-right: 6px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255,255,255,0.26) transparent;
+    }
+
+    .employee-list::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .employee-list::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .employee-list::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.22);
+      border-radius: 999px;
     }
 
     .employee-btn {
@@ -265,11 +291,12 @@
     }
 
     .sidebar-footer {
-      margin-top: auto;
+      margin-top: 16px;
       padding-top: 18px;
       color: var(--muted);
       font-size: 12px;
       line-height: 1.5;
+      flex-shrink: 0;
     }
 
     .main { min-width: 0; }
@@ -662,7 +689,10 @@
     @media (max-width: 1180px) {
       .app-shell { grid-template-columns: 1fr; }
       .sidebar { position: relative; top: 0; height: auto; }
-      .employee-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .employee-list { 
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        max-height: 320px;
+      }
       .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .board { grid-template-columns: 1fr; }
     }
@@ -673,7 +703,10 @@
       .actions { justify-content: stretch; }
       .btn { width: 100%; }
       .toolbar { grid-template-columns: 1fr; }
-      .employee-list { grid-template-columns: 1fr; }
+      .employee-list { 
+        grid-template-columns: 1fr;
+        max-height: 360px;
+      }
       .stats { grid-template-columns: 1fr; }
       .form-grid { grid-template-columns: 1fr; }
     }
@@ -699,7 +732,7 @@
       </form>
 
       <div class="login-helper">
-        O usuário principal deve ser criado no Firebase Authentication com o e-mail <strong>alfafiscalto@gmail.com</strong>. A senha não fica gravada no HTML por segurança.
+        O acesso é liberado para os e-mails autorizados no código e nas regras do Firestore. Crie cada usuário no Firebase Authentication com e-mail e senha.
       </div>
     </div>
   </section>
@@ -914,29 +947,65 @@
       { name: "Julyana", color: "#14b8a6" }
     ];
 
-    const mainUserEmail = "alfafiscalto@gmail.com";
+    const allowedUserEmails = [
+      "alfafiscalto@gmail.com",
+      "rebcaravila@gmail.com",
+      "morettidavid20@gmail.com",
+      "jhempreendimentos93@gmail.com",
+      "flaviarodriguessoltu92@gmail.com",
+      "joycealmeidabrito01@gmail.com",
+      "julyanarocha@unitins.br"
+    ];
+
+    const userProfiles = {
+      "alfafiscalto@gmail.com": { name: "Henrique", role: "Administrador", employee: null },
+      "rebcaravila@gmail.com": { name: "Rebeca", role: "Funcionária", employee: "Rebeca" },
+      "morettidavid20@gmail.com": { name: "David", role: "Funcionário", employee: "David" },
+      "jhempreendimentos93@gmail.com": { name: "Amanda", role: "Funcionária", employee: "Amanda" },
+      "flaviarodriguessoltu92@gmail.com": { name: "Flavia", role: "Funcionária", employee: "Flavia" },
+      "joycealmeidabrito01@gmail.com": { name: "Joyce", role: "Funcionária", employee: "Joyce" },
+      "julyanarocha@unitins.br": { name: "Julyana", role: "Funcionária", employee: "Julyana" }
+    };
+
+    function normalizeEmail(email) {
+      return String(email || "").trim().toLowerCase();
+    }
+
+    function isAllowedUser(email) {
+      return allowedUserEmails.includes(normalizeEmail(email));
+    }
 
     /*
       CONFIGURAÇÃO NECESSÁRIA NO FIREBASE
 
       1) Firebase Console > Authentication > Sign-in method > habilite Email/Password.
-      2) Authentication > Users > Add user:
-         E-mail: alfafiscalto@gmail.com
-         Senha: defina a senha principal informada pelo escritório.
+      2) Authentication > Users > Add user para cada pessoa autorizada.
       3) Firestore Database > Create database.
-      4) Regras recomendadas para liberar somente usuário logado:
+      4) Regras recomendadas para liberar somente os e-mails autorizados:
 
       rules_version = '2';
       service cloud.firestore {
         match /databases/{database}/documents {
+          function signedIn() {
+            return request.auth != null;
+          }
+
+          function allowedUser() {
+            return signedIn()
+              && request.auth.token.email in [
+                'alfafiscalto@gmail.com',
+                'rebcaravila@gmail.com'
+              ];
+          }
+
           match /tarefas/{document=**} {
-            allow read, write: if request.auth != null
-              && request.auth.token.email == 'alfafiscalto@gmail.com';
+            allow read, write: if allowedUser();
           }
         }
       }
 
-      5) Copie as credenciais do app Web e substitua o objeto firebaseConfig abaixo.
+      5) Todo usuário novo precisa ser criado no Authentication e incluído em allowedUserEmails + nas regras acima.
+      6) Copie as credenciais do app Web e substitua o objeto firebaseConfig abaixo.
     */
     const firebaseConfig = {
       apiKey: "AIzaSyCMLD4nzWvBzL7WHbQnGVl2a3sFmC7WmsY",
@@ -956,6 +1025,7 @@
     let editingTaskId = null;
     let firebaseReady = false;
     let currentUser = null;
+    let currentUserProfile = null;
 
     const loginScreen = document.getElementById("loginScreen");
     const appShell = document.getElementById("appShell");
@@ -1171,7 +1241,8 @@
       editingTaskId = task?.id || null;
       modalTitle.textContent = task ? "Editar serviço" : "Novo serviço";
       document.getElementById("taskId").value = task?.id || "";
-      employeeInput.value = task?.employee || (selectedEmployee === "todos" ? employees[0].name : selectedEmployee);
+      const defaultEmployee = currentUserProfile?.employee || employees[0].name;
+      employeeInput.value = task?.employee || (selectedEmployee === "todos" ? defaultEmployee : selectedEmployee);
       document.getElementById("requestDateInput").value = task?.requestDate || todayISO();
       document.getElementById("deadlineInput").value = task?.deadline || todayISO();
       document.getElementById("serviceTypeInput").value = task?.serviceType || "";
@@ -1294,8 +1365,8 @@
       const email = document.getElementById("loginEmail").value.trim();
       const password = document.getElementById("loginPassword").value;
 
-      if (email !== mainUserEmail) {
-        showToast("Este sistema está liberado apenas para o usuário principal da Alfa Contabilidade.");
+      if (!isAllowedUser(email)) {
+        showToast("Este e-mail ainda não está autorizado no sistema. Inclua o e-mail no código e nas regras do Firestore.");
         return;
       }
 
@@ -1315,7 +1386,8 @@
 
     function showApp(user) {
       currentUser = user;
-      currentUserEmail.textContent = user.email;
+      currentUserProfile = userProfiles[normalizeEmail(user.email)] || { name: user.email, role: "Usuário autorizado", employee: null };
+      currentUserEmail.innerHTML = `${escapeHTML(currentUserProfile.name)}<br><small>${escapeHTML(user.email)} · ${escapeHTML(currentUserProfile.role)}</small>`;
       loginScreen.style.display = "none";
       appShell.classList.add("visible");
       setConnection("online", "Conectado ao Firebase");
@@ -1324,6 +1396,7 @@
 
     function showLogin() {
       currentUser = null;
+      currentUserProfile = null;
       currentUserEmail.textContent = "-";
       appShell.classList.remove("visible");
       loginScreen.style.display = "grid";
@@ -1360,10 +1433,10 @@
         setConnection("online", "Firebase pronto para login");
 
         onAuthStateChanged(auth, (user) => {
-          if (user && user.email === mainUserEmail) {
+          if (user && isAllowedUser(user.email)) {
             showApp(user);
           } else {
-            if (user && user.email !== mainUserEmail) signOut(auth);
+            if (user && !isAllowedUser(user.email)) signOut(auth);
             showLogin();
           }
         });
