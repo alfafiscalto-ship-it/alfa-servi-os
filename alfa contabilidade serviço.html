@@ -1,0 +1,1405 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Alfa Contabilidade | Sistema de Serviços</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #07070b;
+      --bg-soft: #11111a;
+      --panel: rgba(20, 20, 31, 0.72);
+      --panel-strong: rgba(28, 28, 42, 0.86);
+      --border: rgba(255, 255, 255, 0.11);
+      --border-strong: rgba(255, 255, 255, 0.2);
+      --text: #f8fafc;
+      --muted: #a7adbb;
+      --muted-2: #757b8c;
+      --red: #e50914;
+      --red-2: #ff3140;
+      --red-dark: #8b0008;
+      --green: #22c55e;
+      --yellow: #f59e0b;
+      --blue: #38bdf8;
+      --pink: #ff4fa3;
+      --shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+      --radius-xl: 28px;
+      --radius-lg: 20px;
+      --radius-md: 14px;
+      --blur: blur(22px);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 15% 12%, rgba(229, 9, 20, 0.32), transparent 28%),
+        radial-gradient(circle at 88% 18%, rgba(255, 49, 64, 0.18), transparent 24%),
+        radial-gradient(circle at 50% 86%, rgba(229, 9, 20, 0.14), transparent 32%),
+        linear-gradient(135deg, #050508 0%, #0b0b12 42%, #13080b 100%);
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.032) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.032) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: radial-gradient(circle at center, black, transparent 78%);
+    }
+
+    .login-screen {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .login-card {
+      width: min(460px, 100%);
+      padding: 30px;
+      border-radius: 32px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      backdrop-filter: var(--blur);
+      -webkit-backdrop-filter: var(--blur);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .login-card::before {
+      content: "";
+      position: absolute;
+      width: 220px;
+      height: 220px;
+      top: -120px;
+      right: -90px;
+      background: radial-gradient(circle, rgba(229, 9, 20, 0.46), transparent 65%);
+      pointer-events: none;
+    }
+
+    .login-logo {
+      width: 62px;
+      height: 62px;
+      border-radius: 20px;
+      background: linear-gradient(145deg, var(--red), #ff5965);
+      display: grid;
+      place-items: center;
+      font-weight: 900;
+      font-size: 24px;
+      box-shadow: 0 14px 38px rgba(229, 9, 20, 0.35);
+      margin-bottom: 18px;
+    }
+
+    .login-card h1 {
+      margin: 0;
+      font-size: 32px;
+      line-height: 1;
+      letter-spacing: -0.06em;
+    }
+
+    .login-card p {
+      margin: 12px 0 22px;
+      color: var(--muted);
+      line-height: 1.5;
+      font-size: 14px;
+    }
+
+    .login-helper {
+      margin-top: 16px;
+      padding: 13px;
+      border: 1px solid rgba(229,9,20,0.24);
+      border-radius: 16px;
+      background: rgba(229,9,20,0.08);
+      color: #fecaca;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .app-shell {
+      width: min(1480px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 28px 0 42px;
+      display: none;
+      grid-template-columns: 300px 1fr;
+      gap: 22px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .app-shell.visible { display: grid; }
+
+    .sidebar,
+    .topbar,
+    .card,
+    .modal-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      backdrop-filter: var(--blur);
+      -webkit-backdrop-filter: var(--blur);
+      box-shadow: var(--shadow);
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 24px;
+      height: calc(100vh - 48px);
+      border-radius: var(--radius-xl);
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .brand {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      padding-bottom: 22px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .brand-mark {
+      width: 48px;
+      height: 48px;
+      border-radius: 16px;
+      background: linear-gradient(145deg, var(--red), #ff5965);
+      display: grid;
+      place-items: center;
+      font-weight: 900;
+      letter-spacing: -1px;
+      box-shadow: 0 14px 38px rgba(229, 9, 20, 0.35);
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 16px;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+    }
+
+    .brand span {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .nav-title {
+      margin: 22px 0 10px;
+      color: var(--muted-2);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-weight: 800;
+    }
+
+    .employee-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .employee-btn {
+      width: 100%;
+      padding: 12px 13px;
+      border: 1px solid transparent;
+      border-radius: 16px;
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.035);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: 180ms ease;
+      font: inherit;
+    }
+
+    .employee-btn:hover,
+    .employee-btn.active {
+      background: rgba(255, 255, 255, 0.085);
+      border-color: var(--border-strong);
+      transform: translateY(-1px);
+    }
+
+    .employee-name {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      font-weight: 700;
+    }
+
+    .dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 999px;
+      box-shadow: 0 0 22px currentColor;
+      background: currentColor;
+    }
+
+    .employee-count {
+      min-width: 28px;
+      height: 24px;
+      padding: 0 8px;
+      display: grid;
+      place-items: center;
+      border-radius: 999px;
+      color: var(--muted);
+      background: rgba(255,255,255,0.06);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
+      padding-top: 18px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .main { min-width: 0; }
+
+    .topbar {
+      border-radius: var(--radius-xl);
+      padding: 20px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      align-items: center;
+    }
+
+    .headline h2 {
+      margin: 0;
+      font-size: clamp(26px, 4vw, 42px);
+      letter-spacing: -0.055em;
+      line-height: 1;
+    }
+
+    .headline p {
+      margin: 9px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    button,
+    input,
+    select,
+    textarea { font-family: inherit; }
+
+    .btn {
+      border: 0;
+      border-radius: 16px;
+      padding: 12px 15px;
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: 180ms ease;
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      justify-content: center;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--red), var(--red-2));
+      box-shadow: 0 16px 38px rgba(229, 9, 20, 0.28);
+    }
+
+    .btn-secondary {
+      background: rgba(255,255,255,0.075);
+      border: 1px solid var(--border);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.08);
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 14px;
+      margin: 18px 0;
+    }
+
+    .stat-card {
+      position: relative;
+      overflow: hidden;
+      border-radius: var(--radius-lg);
+      padding: 17px;
+      background: var(--panel-strong);
+      border: 1px solid var(--border);
+    }
+
+    .stat-card::after {
+      content: "";
+      position: absolute;
+      width: 130px;
+      height: 130px;
+      right: -60px;
+      top: -70px;
+      background: radial-gradient(circle, rgba(229,9,20,0.35), transparent 65%);
+    }
+
+    .stat-label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .stat-value {
+      margin-top: 8px;
+      font-size: 30px;
+      font-weight: 900;
+      letter-spacing: -0.06em;
+    }
+
+    .toolbar {
+      display: grid;
+      grid-template-columns: 1fr 180px 180px;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .field { position: relative; }
+
+    .field input,
+    .field select,
+    .field textarea {
+      width: 100%;
+      border: 1px solid var(--border);
+      outline: none;
+      border-radius: 16px;
+      padding: 13px 14px;
+      background: rgba(255,255,255,0.07);
+      color: var(--text);
+      font-size: 14px;
+    }
+
+    .field textarea {
+      min-height: 106px;
+      resize: vertical;
+    }
+
+    .field select option { color: #111827; }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .column {
+      min-height: 480px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      background: rgba(255,255,255,0.045);
+      overflow: hidden;
+    }
+
+    .column-header {
+      padding: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,0.035);
+    }
+
+    .column-header strong { font-size: 14px; }
+
+    .column-count {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 900;
+      background: rgba(255,255,255,0.075);
+      border-radius: 999px;
+      padding: 5px 9px;
+    }
+
+    .task-list {
+      display: grid;
+      gap: 12px;
+      padding: 14px;
+    }
+
+    .task-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 14px;
+      background: rgba(13, 13, 21, 0.74);
+      box-shadow: 0 14px 40px rgba(0,0,0,0.22);
+      transition: 160ms ease;
+    }
+
+    .task-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--border-strong);
+    }
+
+    .task-card.overdue {
+      border-color: rgba(239, 68, 68, 0.55);
+      box-shadow: 0 18px 48px rgba(229, 9, 20, 0.18);
+    }
+
+    .task-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    .task-title {
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.3;
+      letter-spacing: -0.02em;
+    }
+
+    .task-desc {
+      margin: 10px 0 12px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+      white-space: pre-wrap;
+    }
+
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .pill {
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 5px 8px;
+      font-size: 11px;
+      color: var(--muted);
+      background: rgba(255,255,255,0.045);
+      font-weight: 700;
+    }
+
+    .priority-alta { color: #fecaca; border-color: rgba(239,68,68,0.38); background: rgba(239,68,68,0.12); }
+    .priority-media { color: #fde68a; border-color: rgba(245,158,11,0.36); background: rgba(245,158,11,0.12); }
+    .priority-baixa { color: #bfdbfe; border-color: rgba(56,189,248,0.36); background: rgba(56,189,248,0.12); }
+    .success-pill { color: #bbf7d0; border-color: rgba(34,197,94,0.36); background: rgba(34,197,94,0.12); }
+
+    .task-actions {
+      display: flex;
+      gap: 7px;
+      margin-top: 13px;
+    }
+
+    .icon-btn {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: rgba(255,255,255,0.055);
+      color: var(--text);
+      padding: 8px 9px;
+      cursor: pointer;
+      font-weight: 800;
+      transition: 160ms ease;
+    }
+
+    .icon-btn:hover { background: rgba(255,255,255,0.11); }
+    .danger:hover { background: rgba(229,9,20,0.22); border-color: rgba(229,9,20,0.38); }
+
+    .empty {
+      color: var(--muted-2);
+      text-align: center;
+      padding: 24px 12px;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      display: none;
+      place-items: center;
+      padding: 18px;
+      background: rgba(0, 0, 0, 0.58);
+      z-index: 50;
+    }
+
+    .modal.open { display: grid; }
+
+    .modal-card {
+      width: min(760px, 100%);
+      border-radius: var(--radius-xl);
+      padding: 20px;
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 15px;
+    }
+
+    .modal-header h3 {
+      margin: 0;
+      font-size: 23px;
+      letter-spacing: -0.04em;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .form-grid .full { grid-column: 1 / -1; }
+
+    label {
+      display: block;
+      margin: 0 0 7px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+    }
+
+    .toast {
+      position: fixed;
+      right: 22px;
+      bottom: 22px;
+      width: min(420px, calc(100% - 44px));
+      padding: 14px 16px;
+      border-radius: 18px;
+      border: 1px solid var(--border);
+      background: rgba(15,15,24,0.92);
+      backdrop-filter: blur(18px);
+      box-shadow: var(--shadow);
+      display: none;
+      color: var(--text);
+      font-size: 13px;
+      line-height: 1.45;
+      z-index: 80;
+    }
+
+    .toast.show { display: block; }
+
+    .status-connection {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .pulse {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--yellow);
+      box-shadow: 0 0 18px currentColor;
+      color: var(--yellow);
+    }
+
+    .pulse.online { background: var(--green); color: var(--green); }
+    .pulse.offline { background: var(--red); color: var(--red); }
+
+    .config-box {
+      margin-top: 18px;
+      padding: 14px;
+      border: 1px solid rgba(229,9,20,0.26);
+      border-radius: 18px;
+      background: rgba(229,9,20,0.08);
+      color: #fecaca;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .user-box {
+      margin-top: 14px;
+      padding: 12px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.055);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+      word-break: break-word;
+    }
+
+    @media (max-width: 1180px) {
+      .app-shell { grid-template-columns: 1fr; }
+      .sidebar { position: relative; top: 0; height: auto; }
+      .employee-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .board { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 720px) {
+      .app-shell { width: min(100% - 18px, 1480px); padding-top: 10px; }
+      .topbar { grid-template-columns: 1fr; }
+      .actions { justify-content: stretch; }
+      .btn { width: 100%; }
+      .toolbar { grid-template-columns: 1fr; }
+      .employee-list { grid-template-columns: 1fr; }
+      .stats { grid-template-columns: 1fr; }
+      .form-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <section class="login-screen" id="loginScreen">
+    <div class="login-card">
+      <div class="login-logo">A</div>
+      <h1>Alfa Serviços</h1>
+      <p>Acesso interno para controle de tarefas, prazos e serviços da equipe fiscal/contábil.</p>
+
+      <form id="loginForm">
+        <div class="field">
+          <label for="loginEmail">E-mail</label>
+          <input type="email" id="loginEmail" value="alfafiscalto@gmail.com" autocomplete="username" required>
+        </div>
+        <div class="field" style="margin-top: 12px;">
+          <label for="loginPassword">Senha</label>
+          <input type="password" id="loginPassword" autocomplete="current-password" required>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 16px;">Entrar no sistema</button>
+      </form>
+
+      <div class="login-helper">
+        O usuário principal deve ser criado no Firebase Authentication com o e-mail <strong>alfafiscalto@gmail.com</strong>. A senha não fica gravada no HTML por segurança.
+      </div>
+    </div>
+  </section>
+
+  <div class="app-shell" id="appShell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">A</div>
+        <div>
+          <h1>Alfa Contabilidade</h1>
+          <span>Sistema interno de serviços</span>
+        </div>
+      </div>
+
+      <div class="user-box">
+        <strong>Usuário conectado:</strong><br>
+        <span id="currentUserEmail">-</span>
+      </div>
+
+      <div class="nav-title">Funcionários</div>
+      <div class="employee-list" id="employeeList"></div>
+
+      <div class="config-box" id="firebaseWarning">
+        <strong>Configuração Firebase:</strong><br>
+        Preencha o objeto <code>firebaseConfig</code> no final deste HTML e ative Authentication + Firestore.
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="status-connection">
+          <span class="pulse" id="connectionPulse"></span>
+          <span id="connectionText">Aguardando Firebase</span>
+        </div>
+        <p>Controle criado para organização de tarefas, prazos limite e status da Alfa Contabilidade.</p>
+      </div>
+    </aside>
+
+    <main class="main">
+      <section class="topbar">
+        <div class="headline">
+          <h2 id="pageTitle">Serviços da equipe</h2>
+          <p id="pageSubtitle">Selecione um funcionário e acompanhe os serviços solicitados pelo chefe.</p>
+        </div>
+        <div class="actions">
+          <button class="btn btn-secondary" id="allTasksBtn">Visão geral</button>
+          <button class="btn btn-primary" id="openModalBtn">+ Novo serviço</button>
+          <button class="btn btn-ghost" id="logoutBtn">Sair</button>
+        </div>
+      </section>
+
+      <section class="stats">
+        <div class="stat-card">
+          <div class="stat-label">Total</div>
+          <div class="stat-value" id="statTotal">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Pendente</div>
+          <div class="stat-value" id="statPendente">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Em andamento</div>
+          <div class="stat-value" id="statAndamento">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Concluído</div>
+          <div class="stat-value" id="statConcluido">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Vencidos</div>
+          <div class="stat-value" id="statVencidos">0</div>
+        </div>
+      </section>
+
+      <section class="toolbar">
+        <div class="field">
+          <input type="search" id="searchInput" placeholder="Buscar por serviço, descrição, funcionário ou observação..." />
+        </div>
+        <div class="field">
+          <select id="statusFilter">
+            <option value="todos">Todos os status</option>
+            <option value="pendente">Pendente</option>
+            <option value="andamento">Em andamento</option>
+            <option value="concluido">Concluído</option>
+          </select>
+        </div>
+        <div class="field">
+          <select id="priorityFilter">
+            <option value="todas">Todas prioridades</option>
+            <option value="alta">Alta</option>
+            <option value="media">Média</option>
+            <option value="baixa">Baixa</option>
+          </select>
+        </div>
+      </section>
+
+      <section class="board">
+        <div class="column">
+          <div class="column-header">
+            <strong>🔥 Pendente</strong>
+            <span class="column-count" id="countPendente">0</span>
+          </div>
+          <div class="task-list" id="listPendente"></div>
+        </div>
+
+        <div class="column">
+          <div class="column-header">
+            <strong>⚡ Em andamento</strong>
+            <span class="column-count" id="countAndamento">0</span>
+          </div>
+          <div class="task-list" id="listAndamento"></div>
+        </div>
+
+        <div class="column">
+          <div class="column-header">
+            <strong>✅ Concluído</strong>
+            <span class="column-count" id="countConcluido">0</span>
+          </div>
+          <div class="task-list" id="listConcluido"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal" id="taskModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modalTitle">Novo serviço</h3>
+        <button class="icon-btn" id="closeModalBtn">✕</button>
+      </div>
+
+      <form id="taskForm">
+        <input type="hidden" id="taskId" />
+        <div class="form-grid">
+          <div class="field">
+            <label for="employeeInput">Funcionário</label>
+            <select id="employeeInput" required></select>
+          </div>
+          <div class="field">
+            <label for="requestDateInput">Data do pedido</label>
+            <input type="date" id="requestDateInput" required />
+          </div>
+          <div class="field">
+            <label for="deadlineInput">Prazo limite</label>
+            <input type="date" id="deadlineInput" required />
+          </div>
+          <div class="field">
+            <label for="statusInput">Status</label>
+            <select id="statusInput" required>
+              <option value="pendente">Pendente</option>
+              <option value="andamento">Em andamento</option>
+              <option value="concluido">Concluído</option>
+            </select>
+          </div>
+          <div class="field full">
+            <label for="serviceTypeInput">Tipo de serviço</label>
+            <input type="text" id="serviceTypeInput" placeholder="Ex.: SPED Fiscal, DCTFWeb, lançamento de notas, atendimento ao cliente..." required />
+          </div>
+          <div class="field full">
+            <label for="descriptionInput">Descrição do serviço</label>
+            <textarea id="descriptionInput" placeholder="Descreva exatamente o que precisa ser feito."></textarea>
+          </div>
+          <div class="field">
+            <label for="priorityInput">Prioridade</label>
+            <select id="priorityInput" required>
+              <option value="alta">Alta</option>
+              <option value="media" selected>Média</option>
+              <option value="baixa">Baixa</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="observationInput">Observação</label>
+            <input type="text" id="observationInput" placeholder="Ex.: cliente aguardando, urgente, conferir com chefe..." />
+          </div>
+        </div>
+        <div class="actions" style="margin-top: 16px;">
+          <button type="button" class="btn btn-secondary" id="cancelBtn">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar serviço</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+    import {
+      getAuth,
+      signInWithEmailAndPassword,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      updateDoc,
+      deleteDoc,
+      doc,
+      onSnapshot,
+      serverTimestamp,
+      query,
+      orderBy
+    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+    const employees = [
+      { name: "Henrique", color: "#ef4444" },
+      { name: "Rebeca", color: "#ff4fa3" },
+      { name: "David", color: "#38bdf8" },
+      { name: "Amanda", color: "#a855f7" },
+      { name: "Flavia", color: "#22c55e" },
+      { name: "Joyce", color: "#f59e0b" },
+      { name: "Julyana", color: "#14b8a6" }
+    ];
+
+    const mainUserEmail = "alfafiscalto@gmail.com";
+
+    /*
+      CONFIGURAÇÃO NECESSÁRIA NO FIREBASE
+
+      1) Firebase Console > Authentication > Sign-in method > habilite Email/Password.
+      2) Authentication > Users > Add user:
+         E-mail: alfafiscalto@gmail.com
+         Senha: defina a senha principal informada pelo escritório.
+      3) Firestore Database > Create database.
+      4) Regras recomendadas para liberar somente usuário logado:
+
+      rules_version = '2';
+      service cloud.firestore {
+        match /databases/{database}/documents {
+          match /tarefas/{document=**} {
+            allow read, write: if request.auth != null
+              && request.auth.token.email == 'alfafiscalto@gmail.com';
+          }
+        }
+      }
+
+      5) Copie as credenciais do app Web e substitua o objeto firebaseConfig abaixo.
+    */
+    const firebaseConfig = {
+      apiKey: "AIzaSyCMLD4nzWvBzL7WHbQnGVl2a3sFmC7WmsY",
+      authDomain: "alfa-work-b8ace.firebaseapp.com",
+      projectId: "alfa-work-b8ace",
+      storageBucket: "alfa-work-b8ace.firebasestorage.app",
+      messagingSenderId: "480744432593",
+      appId: "1:480744432593:web:fe5d889aee08000417b6f0"
+    };
+
+    let app = null;
+    let auth = null;
+    let db = null;
+    let unsubscribe = null;
+    let tasks = [];
+    let selectedEmployee = "todos";
+    let editingTaskId = null;
+    let firebaseReady = false;
+    let currentUser = null;
+
+    const loginScreen = document.getElementById("loginScreen");
+    const appShell = document.getElementById("appShell");
+    const employeeList = document.getElementById("employeeList");
+    const employeeInput = document.getElementById("employeeInput");
+    const pageTitle = document.getElementById("pageTitle");
+    const pageSubtitle = document.getElementById("pageSubtitle");
+    const taskModal = document.getElementById("taskModal");
+    const taskForm = document.getElementById("taskForm");
+    const modalTitle = document.getElementById("modalTitle");
+    const toast = document.getElementById("toast");
+    const connectionPulse = document.getElementById("connectionPulse");
+    const connectionText = document.getElementById("connectionText");
+    const firebaseWarning = document.getElementById("firebaseWarning");
+    const currentUserEmail = document.getElementById("currentUserEmail");
+
+    const statusLabels = {
+      pendente: "Pendente",
+      andamento: "Em andamento",
+      concluido: "Concluído"
+    };
+
+    const priorityLabels = {
+      alta: "Alta",
+      media: "Média",
+      baixa: "Baixa"
+    };
+
+    function isFirebaseConfigured() {
+      return firebaseConfig.apiKey && !firebaseConfig.apiKey.includes("COLE_AQUI");
+    }
+
+    function formatDate(dateString) {
+      if (!dateString) return "Sem data";
+      const [year, month, day] = dateString.split("-");
+      return `${day}/${month}/${year}`;
+    }
+
+    function todayISO() {
+      return new Date().toISOString().slice(0, 10);
+    }
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 3900);
+    }
+
+    function setConnection(status, message) {
+      connectionPulse.className = `pulse ${status}`;
+      connectionText.textContent = message;
+    }
+
+    function buildEmployees() {
+      const allBtn = document.createElement("button");
+      allBtn.className = "employee-btn active";
+      allBtn.dataset.employee = "todos";
+      allBtn.innerHTML = `
+        <span class="employee-name"><span class="dot" style="color: var(--red)"></span>Todos</span>
+        <span class="employee-count" id="count-todos">0</span>
+      `;
+      employeeList.appendChild(allBtn);
+
+      employees.forEach(employee => {
+        const btn = document.createElement("button");
+        btn.className = "employee-btn";
+        btn.dataset.employee = employee.name;
+        btn.innerHTML = `
+          <span class="employee-name"><span class="dot" style="color:${employee.color}"></span>${employee.name}</span>
+          <span class="employee-count" id="count-${employee.name}">0</span>
+        `;
+        employeeList.appendChild(btn);
+
+        const option = document.createElement("option");
+        option.value = employee.name;
+        option.textContent = employee.name;
+        employeeInput.appendChild(option);
+      });
+
+      employeeList.addEventListener("click", (event) => {
+        const btn = event.target.closest(".employee-btn");
+        if (!btn) return;
+        selectedEmployee = btn.dataset.employee;
+        document.querySelectorAll(".employee-btn").forEach(item => item.classList.remove("active"));
+        btn.classList.add("active");
+        render();
+      });
+    }
+
+    function getFilteredTasks() {
+      const searchTerm = document.getElementById("searchInput").value.trim().toLowerCase();
+      const statusFilter = document.getElementById("statusFilter").value;
+      const priorityFilter = document.getElementById("priorityFilter").value;
+
+      return tasks.filter(task => {
+        const byEmployee = selectedEmployee === "todos" || task.employee === selectedEmployee;
+        const byStatus = statusFilter === "todos" || task.status === statusFilter;
+        const byPriority = priorityFilter === "todas" || task.priority === priorityFilter;
+        const text = [task.employee, task.serviceType, task.description, task.observation, task.status, task.priority]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        const bySearch = !searchTerm || text.includes(searchTerm);
+        return byEmployee && byStatus && byPriority && bySearch;
+      });
+    }
+
+    function isOverdue(task) {
+      return task.deadline && task.status !== "concluido" && task.deadline < todayISO();
+    }
+
+    function renderStats(filtered) {
+      const total = filtered.length;
+      const pendente = filtered.filter(task => task.status === "pendente").length;
+      const andamento = filtered.filter(task => task.status === "andamento").length;
+      const concluido = filtered.filter(task => task.status === "concluido").length;
+      const vencidos = filtered.filter(isOverdue).length;
+
+      document.getElementById("statTotal").textContent = total;
+      document.getElementById("statPendente").textContent = pendente;
+      document.getElementById("statAndamento").textContent = andamento;
+      document.getElementById("statConcluido").textContent = concluido;
+      document.getElementById("statVencidos").textContent = vencidos;
+      document.getElementById("countPendente").textContent = pendente;
+      document.getElementById("countAndamento").textContent = andamento;
+      document.getElementById("countConcluido").textContent = concluido;
+
+      document.getElementById("count-todos").textContent = tasks.length;
+      employees.forEach(employee => {
+        const el = document.getElementById(`count-${employee.name}`);
+        if (el) el.textContent = tasks.filter(task => task.employee === employee.name && task.status !== "concluido").length;
+      });
+    }
+
+    function renderHeader() {
+      if (selectedEmployee === "todos") {
+        pageTitle.textContent = "Serviços da equipe";
+        pageSubtitle.textContent = "Visão geral de todos os funcionários da Alfa Contabilidade.";
+        return;
+      }
+      const employee = employees.find(item => item.name === selectedEmployee);
+      pageTitle.textContent = `Serviços de ${selectedEmployee}`;
+      pageSubtitle.textContent = `Painel individual com cor própria para ${selectedEmployee}.`;
+      document.documentElement.style.setProperty("--red", employee?.color || "#e50914");
+    }
+
+    function createTaskCard(task) {
+      const card = document.createElement("article");
+      const overdue = isOverdue(task);
+      const oldRequest = task.requestDate && task.requestDate < todayISO();
+
+      card.className = `task-card ${overdue ? "overdue" : ""}`;
+      card.style.borderTop = `3px solid ${employees.find(e => e.name === task.employee)?.color || "var(--red)"}`;
+
+      card.innerHTML = `
+        <div class="task-top">
+          <h4 class="task-title">${escapeHTML(task.serviceType || "Serviço sem título")}</h4>
+          <span class="pill priority-${task.priority || "media"}">${priorityLabels[task.priority] || "Média"}</span>
+        </div>
+        <p class="task-desc">${escapeHTML(task.description || "Sem descrição informada.")}</p>
+        <div class="pill-row">
+          <span class="pill">👤 ${escapeHTML(task.employee)}</span>
+          <span class="pill">📅 Pedido: ${formatDate(task.requestDate)}</span>
+          <span class="pill ${overdue ? "priority-alta" : ""}">⏳ Prazo limite: ${formatDate(task.deadline)}</span>
+          <span class="pill ${task.status === "concluido" ? "success-pill" : ""}">📌 ${statusLabels[task.status] || "Pendente"}</span>
+          ${overdue ? `<span class="pill priority-alta">⚠️ Prazo vencido</span>` : ""}
+          ${oldRequest ? `<span class="pill priority-media">Pedido anterior a hoje</span>` : ""}
+          ${task.observation ? `<span class="pill">📝 ${escapeHTML(task.observation)}</span>` : ""}
+        </div>
+        <div class="task-actions">
+          <button class="icon-btn" data-action="edit" data-id="${task.id}">Editar</button>
+          <button class="icon-btn" data-action="next" data-id="${task.id}">Avançar</button>
+          <button class="icon-btn danger" data-action="delete" data-id="${task.id}">Excluir</button>
+        </div>
+      `;
+      return card;
+    }
+
+    function escapeHTML(value) {
+      return String(value || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function renderColumn(id, columnTasks) {
+      const list = document.getElementById(id);
+      list.innerHTML = "";
+
+      if (!columnTasks.length) {
+        list.innerHTML = `<div class="empty">Nenhum serviço nesta coluna.</div>`;
+        return;
+      }
+
+      columnTasks.forEach(task => list.appendChild(createTaskCard(task)));
+    }
+
+    function render() {
+      if (selectedEmployee === "todos") {
+        document.documentElement.style.setProperty("--red", "#e50914");
+      }
+      renderHeader();
+      const filtered = getFilteredTasks();
+      renderStats(filtered);
+      renderColumn("listPendente", filtered.filter(task => task.status === "pendente"));
+      renderColumn("listAndamento", filtered.filter(task => task.status === "andamento"));
+      renderColumn("listConcluido", filtered.filter(task => task.status === "concluido"));
+    }
+
+    function openModal(task = null) {
+      editingTaskId = task?.id || null;
+      modalTitle.textContent = task ? "Editar serviço" : "Novo serviço";
+      document.getElementById("taskId").value = task?.id || "";
+      employeeInput.value = task?.employee || (selectedEmployee === "todos" ? employees[0].name : selectedEmployee);
+      document.getElementById("requestDateInput").value = task?.requestDate || todayISO();
+      document.getElementById("deadlineInput").value = task?.deadline || todayISO();
+      document.getElementById("serviceTypeInput").value = task?.serviceType || "";
+      document.getElementById("descriptionInput").value = task?.description || "";
+      document.getElementById("statusInput").value = task?.status || "pendente";
+      document.getElementById("priorityInput").value = task?.priority || "media";
+      document.getElementById("observationInput").value = task?.observation || "";
+      taskModal.classList.add("open");
+    }
+
+    function closeModal() {
+      taskModal.classList.remove("open");
+      taskForm.reset();
+      editingTaskId = null;
+    }
+
+    function getNextStatus(status) {
+      if (status === "pendente") return "andamento";
+      if (status === "andamento") return "concluido";
+      return "pendente";
+    }
+
+    async function saveTask(event) {
+      event.preventDefault();
+
+      const payload = {
+        employee: employeeInput.value,
+        requestDate: document.getElementById("requestDateInput").value,
+        deadline: document.getElementById("deadlineInput").value,
+        serviceType: document.getElementById("serviceTypeInput").value.trim(),
+        description: document.getElementById("descriptionInput").value.trim(),
+        status: document.getElementById("statusInput").value,
+        priority: document.getElementById("priorityInput").value,
+        observation: document.getElementById("observationInput").value.trim(),
+        updatedAt: serverTimestamp(),
+        updatedBy: currentUser?.email || null
+      };
+
+      if (!payload.serviceType) {
+        showToast("Informe o tipo de serviço antes de salvar.");
+        return;
+      }
+
+      if (!payload.deadline) {
+        showToast("Informe o prazo limite do serviço.");
+        return;
+      }
+
+      if (payload.deadline < payload.requestDate) {
+        showToast("O prazo limite não pode ser anterior à data do pedido.");
+        return;
+      }
+
+      if (!firebaseReady || !currentUser) {
+        showToast("Faça login e configure o Firebase para salvar os serviços.");
+        return;
+      }
+
+      try {
+        if (editingTaskId) {
+          await updateDoc(doc(db, "tarefas", editingTaskId), payload);
+          showToast("Serviço atualizado com sucesso.");
+        } else {
+          await addDoc(collection(db, "tarefas"), {
+            ...payload,
+            createdAt: serverTimestamp(),
+            createdBy: currentUser.email
+          });
+          showToast("Serviço criado com sucesso.");
+        }
+        closeModal();
+      } catch (error) {
+        console.error(error);
+        showToast("Não foi possível salvar. Confira as regras do Firestore e a configuração Firebase.");
+      }
+    }
+
+    async function handleTaskAction(event) {
+      const button = event.target.closest("button[data-action]");
+      if (!button) return;
+
+      const task = tasks.find(item => item.id === button.dataset.id);
+      if (!task) return;
+
+      if (button.dataset.action === "edit") {
+        openModal(task);
+        return;
+      }
+
+      if (!firebaseReady || !currentUser) {
+        showToast("Faça login antes de alterar os serviços.");
+        return;
+      }
+
+      if (button.dataset.action === "next") {
+        await updateDoc(doc(db, "tarefas", task.id), {
+          status: getNextStatus(task.status),
+          updatedAt: serverTimestamp(),
+          updatedBy: currentUser.email
+        });
+        return;
+      }
+
+      if (button.dataset.action === "delete") {
+        const confirmDelete = confirm("Tem certeza que deseja excluir este serviço?");
+        if (!confirmDelete) return;
+        await deleteDoc(doc(db, "tarefas", task.id));
+        showToast("Serviço excluído.");
+      }
+    }
+
+    async function handleLogin(event) {
+      event.preventDefault();
+
+      if (!firebaseReady) {
+        showToast("Configure o Firebase antes de fazer login.");
+        return;
+      }
+
+      const email = document.getElementById("loginEmail").value.trim();
+      const password = document.getElementById("loginPassword").value;
+
+      if (email !== mainUserEmail) {
+        showToast("Este sistema está liberado apenas para o usuário principal da Alfa Contabilidade.");
+        return;
+      }
+
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+      } catch (error) {
+        console.error(error);
+        showToast("Login não autorizado. Confira e-mail, senha e Authentication no Firebase.");
+      }
+    }
+
+    async function handleLogout() {
+      if (!auth) return;
+      await signOut(auth);
+      showToast("Sessão encerrada.");
+    }
+
+    function showApp(user) {
+      currentUser = user;
+      currentUserEmail.textContent = user.email;
+      loginScreen.style.display = "none";
+      appShell.classList.add("visible");
+      setConnection("online", "Conectado ao Firebase");
+      listenTasks();
+    }
+
+    function showLogin() {
+      currentUser = null;
+      currentUserEmail.textContent = "-";
+      appShell.classList.remove("visible");
+      loginScreen.style.display = "grid";
+      if (unsubscribe) unsubscribe();
+      tasks = [];
+      render();
+    }
+
+    function listenTasks() {
+      if (unsubscribe) unsubscribe();
+      const tasksQuery = query(collection(db, "tarefas"), orderBy("createdAt", "desc"));
+      unsubscribe = onSnapshot(tasksQuery, (snapshot) => {
+        tasks = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+        render();
+      }, (error) => {
+        console.error(error);
+        setConnection("offline", "Erro ao carregar dados");
+        showToast("Erro ao ouvir o Firestore. Verifique as regras do banco de dados.");
+      });
+    }
+
+    function startFirebase() {
+      if (!isFirebaseConfigured()) {
+        setConnection("offline", "Firebase não configurado");
+        return;
+      }
+
+      try {
+        app = initializeApp(firebaseConfig);
+        auth = getAuth(app);
+        db = getFirestore(app);
+        firebaseReady = true;
+        firebaseWarning.style.display = "none";
+        setConnection("online", "Firebase pronto para login");
+
+        onAuthStateChanged(auth, (user) => {
+          if (user && user.email === mainUserEmail) {
+            showApp(user);
+          } else {
+            if (user && user.email !== mainUserEmail) signOut(auth);
+            showLogin();
+          }
+        });
+      } catch (error) {
+        console.error(error);
+        setConnection("offline", "Falha na conexão Firebase");
+        showToast("Não foi possível iniciar o Firebase. Confira as credenciais.");
+      }
+    }
+
+    document.getElementById("loginForm").addEventListener("submit", handleLogin);
+    document.getElementById("logoutBtn").addEventListener("click", handleLogout);
+    document.getElementById("openModalBtn").addEventListener("click", () => openModal());
+    document.getElementById("closeModalBtn").addEventListener("click", closeModal);
+    document.getElementById("cancelBtn").addEventListener("click", closeModal);
+    document.getElementById("allTasksBtn").addEventListener("click", () => {
+      selectedEmployee = "todos";
+      document.querySelectorAll(".employee-btn").forEach(item => item.classList.toggle("active", item.dataset.employee === "todos"));
+      render();
+    });
+    document.getElementById("searchInput").addEventListener("input", render);
+    document.getElementById("statusFilter").addEventListener("change", render);
+    document.getElementById("priorityFilter").addEventListener("change", render);
+    document.querySelector(".board").addEventListener("click", handleTaskAction);
+    taskForm.addEventListener("submit", saveTask);
+    taskModal.addEventListener("click", event => {
+      if (event.target === taskModal) closeModal();
+    });
+
+    buildEmployees();
+    render();
+    startFirebase();
+
+    window.addEventListener("beforeunload", () => {
+      if (unsubscribe) unsubscribe();
+    });
+  </script>
+</body>
+</html>
