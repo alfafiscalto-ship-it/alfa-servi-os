@@ -200,13 +200,6 @@
       font-weight: 500;
     }
 
-    .brand,
-    .user-box,
-    .nav-title,
-    .config-box {
-      flex-shrink: 0;
-    }
-
     .nav-title {
       margin: 22px 0 10px;
       color: var(--muted-2);
@@ -296,7 +289,6 @@
       color: var(--muted);
       font-size: 12px;
       line-height: 1.5;
-      flex-shrink: 0;
     }
 
     .main { min-width: 0; }
@@ -686,6 +678,87 @@
       word-break: break-word;
     }
 
+
+    .task-title,
+    .task-desc,
+    .pill,
+    .task-card a {
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    .task-top {
+      min-width: 0;
+    }
+
+    .task-title {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .task-card {
+      overflow: hidden;
+    }
+
+    .attachment-list {
+      margin-top: 12px;
+      display: grid;
+      gap: 7px;
+    }
+
+    .attachment-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      width: fit-content;
+      max-width: 100%;
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 999px;
+      padding: 6px 9px;
+      color: #e5e7eb;
+      text-decoration: none;
+      background: rgba(255,255,255,0.06);
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .attachment-link:hover {
+      background: rgba(255,255,255,0.12);
+    }
+
+    .btn-start {
+      background: rgba(56, 189, 248, 0.14);
+      border-color: rgba(56, 189, 248, 0.36);
+    }
+
+    .btn-finish {
+      background: rgba(34, 197, 94, 0.14);
+      border-color: rgba(34, 197, 94, 0.36);
+    }
+
+    .btn-reopen {
+      background: rgba(245, 158, 11, 0.14);
+      border-color: rgba(245, 158, 11, 0.36);
+    }
+
+    .visual-vencido {
+      color: #fecaca;
+      border-color: rgba(239,68,68,0.48);
+      background: rgba(239,68,68,0.16);
+    }
+
+    .visual-hoje {
+      color: #fde68a;
+      border-color: rgba(245,158,11,0.46);
+      background: rgba(245,158,11,0.16);
+    }
+
+    .visual-ok {
+      color: #bbf7d0;
+      border-color: rgba(34,197,94,0.42);
+      background: rgba(34,197,94,0.14);
+    }
+
     @media (max-width: 1180px) {
       .app-shell { grid-template-columns: 1fr; }
       .sidebar { position: relative; top: 0; height: auto; }
@@ -732,7 +805,7 @@
       </form>
 
       <div class="login-helper">
-        O acesso é liberado para os e-mails autorizados no código e nas regras do Firestore. Crie cada usuário no Firebase Authentication com e-mail e senha.
+        O usuário principal deve ser criado no Firebase Authentication com o e-mail <strong>alfafiscalto@gmail.com</strong>. A senha não fica gravada no HTML por segurança.
       </div>
     </div>
   </section>
@@ -905,6 +978,10 @@
             <label for="observationInput">Observação</label>
             <input type="text" id="observationInput" placeholder="Ex.: cliente aguardando, urgente, conferir com chefe..." />
           </div>
+          <div class="field full">
+            <label for="attachmentsInput">Anexos</label>
+            <input type="file" id="attachmentsInput" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.xml,.txt" />
+          </div>
         </div>
         <div class="actions" style="margin-top: 16px;">
           <button type="button" class="btn btn-secondary" id="cancelBtn">Cancelar</button>
@@ -936,6 +1013,12 @@
       query,
       orderBy
     } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+    import {
+      getStorage,
+      ref as storageRef,
+      uploadBytes,
+      getDownloadURL
+    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js";
 
     const employees = [
       { name: "Henrique", color: "#ef4444" },
@@ -979,33 +1062,23 @@
       CONFIGURAÇÃO NECESSÁRIA NO FIREBASE
 
       1) Firebase Console > Authentication > Sign-in method > habilite Email/Password.
-      2) Authentication > Users > Add user para cada pessoa autorizada.
+      2) Authentication > Users > Add user:
+         E-mail: alfafiscalto@gmail.com
+         Senha: defina a senha principal informada pelo escritório.
       3) Firestore Database > Create database.
-      4) Regras recomendadas para liberar somente os e-mails autorizados:
+      4) Regras recomendadas para liberar somente usuário logado:
 
       rules_version = '2';
       service cloud.firestore {
         match /databases/{database}/documents {
-          function signedIn() {
-            return request.auth != null;
-          }
-
-          function allowedUser() {
-            return signedIn()
-              && request.auth.token.email in [
-                'alfafiscalto@gmail.com',
-                'rebcaravila@gmail.com'
-              ];
-          }
-
           match /tarefas/{document=**} {
-            allow read, write: if allowedUser();
+            allow read, write: if request.auth != null
+              && request.auth.token.email == 'alfafiscalto@gmail.com';
           }
         }
       }
 
-      5) Todo usuário novo precisa ser criado no Authentication e incluído em allowedUserEmails + nas regras acima.
-      6) Copie as credenciais do app Web e substitua o objeto firebaseConfig abaixo.
+      5) Copie as credenciais do app Web e substitua o objeto firebaseConfig abaixo.
     */
     const firebaseConfig = {
       apiKey: "AIzaSyCMLD4nzWvBzL7WHbQnGVl2a3sFmC7WmsY",
@@ -1019,6 +1092,7 @@
     let app = null;
     let auth = null;
     let db = null;
+    let storage = null;
     let unsubscribe = null;
     let tasks = [];
     let selectedEmployee = "todos";
@@ -1180,6 +1254,12 @@
       card.className = `task-card ${overdue ? "overdue" : ""}`;
       card.style.borderTop = `3px solid ${employees.find(e => e.name === task.employee)?.color || "var(--red)"}`;
 
+      const dueToday = task.deadline && task.status !== "concluido" && task.deadline === todayISO();
+      const attachments = Array.isArray(task.attachments) ? task.attachments : [];
+      const nextActionLabel = task.status === "pendente" ? "Iniciar" : task.status === "andamento" ? "Concluir" : "Reabrir";
+      const nextActionClass = task.status === "pendente" ? "btn-start" : task.status === "andamento" ? "btn-finish" : "btn-reopen";
+      const dueClass = overdue ? "visual-vencido" : dueToday ? "visual-hoje" : task.status === "concluido" ? "visual-ok" : "";
+
       card.innerHTML = `
         <div class="task-top">
           <h4 class="task-title">${escapeHTML(task.serviceType || "Serviço sem título")}</h4>
@@ -1189,15 +1269,26 @@
         <div class="pill-row">
           <span class="pill">👤 ${escapeHTML(task.employee)}</span>
           <span class="pill">📅 Pedido: ${formatDate(task.requestDate)}</span>
-          <span class="pill ${overdue ? "priority-alta" : ""}">⏳ Prazo limite: ${formatDate(task.deadline)}</span>
+          <span class="pill ${dueClass}">⏳ Prazo limite: ${formatDate(task.deadline)}</span>
           <span class="pill ${task.status === "concluido" ? "success-pill" : ""}">📌 ${statusLabels[task.status] || "Pendente"}</span>
-          ${overdue ? `<span class="pill priority-alta">⚠️ Prazo vencido</span>` : ""}
+          ${overdue ? `<span class="pill visual-vencido">⚠️ Prazo vencido</span>` : ""}
+          ${dueToday ? `<span class="pill visual-hoje">⚠️ Vence hoje</span>` : ""}
           ${oldRequest ? `<span class="pill priority-media">Pedido anterior a hoje</span>` : ""}
           ${task.observation ? `<span class="pill">📝 ${escapeHTML(task.observation)}</span>` : ""}
+          ${attachments.length ? `<span class="pill">📎 ${attachments.length} anexo(s)</span>` : ""}
         </div>
+        ${attachments.length ? `
+          <div class="attachment-list">
+            ${attachments.map(file => `
+              <a class="attachment-link" href="${escapeHTML(file.url)}" target="_blank" rel="noopener">
+                📎 ${escapeHTML(file.name || "Anexo")}
+              </a>
+            `).join("")}
+          </div>
+        ` : ""}
         <div class="task-actions">
           <button class="icon-btn" data-action="edit" data-id="${task.id}">Editar</button>
-          <button class="icon-btn" data-action="next" data-id="${task.id}">Avançar</button>
+          <button class="icon-btn ${nextActionClass}" data-action="next" data-id="${task.id}">${nextActionLabel}</button>
           <button class="icon-btn danger" data-action="delete" data-id="${task.id}">Excluir</button>
         </div>
       `;
@@ -1265,6 +1356,42 @@
       return "pendente";
     }
 
+
+    async function uploadTaskAttachments(taskId) {
+      const input = document.getElementById("attachmentsInput");
+      const files = Array.from(input.files || []);
+      if (!files.length) return [];
+
+      if (!storage) {
+        throw new Error("Storage não configurado.");
+      }
+
+      const uploaded = [];
+      for (const file of files) {
+        const safeName = file.name.replace(/[^\w.\-À-ÿ ]+/g, "_");
+        const path = `tarefas/${taskId}/${Date.now()}-${safeName}`;
+        const fileRef = storageRef(storage, path);
+        await uploadBytes(fileRef, file, {
+          contentType: file.type || "application/octet-stream",
+          customMetadata: {
+            uploadedBy: currentUser?.email || "",
+            originalName: file.name
+          }
+        });
+        const url = await getDownloadURL(fileRef);
+        uploaded.push({
+          name: file.name,
+          url,
+          path,
+          type: file.type || "arquivo",
+          size: file.size,
+          uploadedAt: new Date().toISOString(),
+          uploadedBy: currentUser?.email || null
+        });
+      }
+      return uploaded;
+    }
+
     async function saveTask(event) {
       event.preventDefault();
 
@@ -1303,14 +1430,24 @@
 
       try {
         if (editingTaskId) {
-          await updateDoc(doc(db, "tarefas", editingTaskId), payload);
+          const previousTask = tasks.find(item => item.id === editingTaskId);
+          const newAttachments = await uploadTaskAttachments(editingTaskId);
+          await updateDoc(doc(db, "tarefas", editingTaskId), {
+            ...payload,
+            attachments: [...(previousTask?.attachments || []), ...newAttachments]
+          });
           showToast("Serviço atualizado com sucesso.");
         } else {
-          await addDoc(collection(db, "tarefas"), {
+          const newDoc = await addDoc(collection(db, "tarefas"), {
             ...payload,
+            attachments: [],
             createdAt: serverTimestamp(),
             createdBy: currentUser.email
           });
+          const newAttachments = await uploadTaskAttachments(newDoc.id);
+          if (newAttachments.length) {
+            await updateDoc(doc(db, "tarefas", newDoc.id), { attachments: newAttachments });
+          }
           showToast("Serviço criado com sucesso.");
         }
         closeModal();
@@ -1338,11 +1475,16 @@
       }
 
       if (button.dataset.action === "next") {
+        const nextStatus = getNextStatus(task.status);
+        const confirmChange = confirm(`Confirmar alteração do status para "${statusLabels[nextStatus]}"?`);
+        if (!confirmChange) return;
+
         await updateDoc(doc(db, "tarefas", task.id), {
-          status: getNextStatus(task.status),
+          status: nextStatus,
           updatedAt: serverTimestamp(),
           updatedBy: currentUser.email
         });
+        showToast(`Status alterado para ${statusLabels[nextStatus]}.`);
         return;
       }
 
@@ -1428,6 +1570,7 @@
         app = initializeApp(firebaseConfig);
         auth = getAuth(app);
         db = getFirestore(app);
+        storage = getStorage(app);
         firebaseReady = true;
         firebaseWarning.style.display = "none";
         setConnection("online", "Firebase pronto para login");
