@@ -965,6 +965,90 @@
       .stats { grid-template-columns: 1fr; }
       .form-grid { grid-template-columns: 1fr; }
     }
+  
+
+    /* =========================================================
+       CORREÇÃO DEFINITIVA DA ROLAGEM DOS FUNCIONÁRIOS
+       O menu lateral é uma coluna fixa. A lista de funcionários
+       precisa ocupar SOMENTE o espaço restante e rolar internamente.
+       ========================================================= */
+    .sidebar {
+      min-height: 0 !important;
+      overflow: hidden !important;
+    }
+
+    .brand,
+    .user-box,
+    .nav-title,
+    .nav-switch,
+    .config-box,
+    .sidebar-footer {
+      flex: 0 0 auto !important;
+    }
+
+    .employee-list {
+      display: grid !important;
+      grid-auto-rows: max-content !important;
+      gap: 10px !important;
+      flex: 1 1 auto !important;
+      min-height: 0 !important;
+      height: auto !important;
+      max-height: none !important;
+      overflow-y: auto !important;
+      overflow-x: hidden !important;
+      padding-right: 10px !important;
+      padding-bottom: 10px !important;
+      overscroll-behavior: contain !important;
+      -webkit-overflow-scrolling: touch !important;
+      scrollbar-gutter: stable both-edges !important;
+      scrollbar-width: auto !important;
+      scrollbar-color: rgba(255,255,255,0.72) rgba(255,255,255,0.10) !important;
+    }
+
+    .employee-list::-webkit-scrollbar {
+      width: 14px !important;
+      display: block !important;
+    }
+
+    .employee-list::-webkit-scrollbar-track {
+      background: rgba(255,255,255,0.10) !important;
+      border-radius: 999px !important;
+    }
+
+    .employee-list::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.58) !important;
+      border: 3px solid rgba(18,18,28,0.95) !important;
+      border-radius: 999px !important;
+    }
+
+    .employee-list::-webkit-scrollbar-thumb:hover {
+      background: rgba(255,255,255,0.82) !important;
+    }
+
+    .employee-btn {
+      flex: 0 0 auto !important;
+    }
+
+    @media (max-width: 1180px) {
+      .sidebar {
+        max-height: none !important;
+        height: auto !important;
+        overflow: visible !important;
+      }
+
+      .employee-list {
+        flex: 0 0 auto !important;
+        max-height: 360px !important;
+        overflow-y: auto !important;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .employee-list {
+        max-height: 380px !important;
+      }
+    }
+
   </style>
 </head>
 <body>
