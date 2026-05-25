@@ -726,20 +726,6 @@
 
     .toast.show { display: block; }
 
-
-    .system-error-box {
-      margin: 12px 0;
-      padding: 12px 14px;
-      border-radius: 16px;
-      border: 1px solid rgba(239,68,68,0.35);
-      background: rgba(239,68,68,0.10);
-      color: #fecaca;
-      font-size: 12px;
-      line-height: 1.45;
-      display: none;
-    }
-    .system-error-box.show { display: block; }
-
     .status-connection {
       display: inline-flex;
       align-items: center;
@@ -1098,12 +1084,22 @@
       }
     }
 
+  
+
+    /* Correção de clique: garante que a barra superior e o botão Novo serviço fiquem clicáveis */
+    .topbar, .actions, #openModalBtn {
+      position: relative;
+      z-index: 20;
+      pointer-events: auto;
+    }
+    .modal { z-index: 9999; }
+
   </style>
 </head>
 <body>
   <section class="login-screen" id="loginScreen">
     <div class="login-version-badge">
-      <strong>Versão 1.4</strong>
+      <strong>Versão 1.5</strong>
       <span>Sistema criado por David Moretti Ferreira.</span>
     </div>
     <div class="login-card">
@@ -1124,7 +1120,7 @@
       </form>
 
       <div class="login-helper">
-        O usuário principal deve ser criado no Firebase Authentication. E-mails administrativos: <strong>alfacontabilidade2014@gmail.com</strong> e <strong>alfafiscalto@gmail.com</strong>. A senha não fica gravada no HTML por segurança.
+        O usuário principal deve ser criado no Firebase Authentication. E-mails administrativos: <strong>alfacontabilidade2014@gmail.com</strong>, <strong>alfafiscalto@gmail.com</strong> e <strong>morettidavid20@gmail.com</strong>. A senha não fica gravada no HTML por segurança.
       </div>
     </div>
   </section>
@@ -1174,17 +1170,13 @@
           <p id="pageSubtitle">Selecione um funcionário e acompanhe os serviços solicitados pelo chefe.</p>
         </div>
         <div class="actions">
-          <button class="btn btn-secondary" id="allTasksBtn">Visão geral</button>
+          <button class="btn btn-secondary" id="allTasksBtn" type="button">Visão geral</button>
           <button class="btn btn-secondary" id="exportBackupBtn" type="button" style="display:none;">Exportar backup</button>
-          <button class="btn btn-secondary" id="importBackupBtn" type="button" style="display:none;">Importar backup</button>
-          <input type="file" id="importBackupInput" accept="application/json,.json" style="display:none;" />
           <button class="btn btn-secondary" id="resetPasswordBtn" type="button">Alterar senha</button>
-          <button class="btn btn-primary" id="openModalBtn">+ Novo serviço</button>
-          <button class="btn btn-ghost" id="logoutBtn">Sair</button>
+          <button class="btn btn-primary" id="openModalBtn" type="button" onclick="window.forceOpenModal && window.forceOpenModal()">+ Novo serviço</button>
+          <button class="btn btn-ghost" id="logoutBtn" type="button">Sair</button>
         </div>
       </section>
-
-      <div id="systemErrorBox" class="system-error-box"></div>
 
       <section class="stats">
         <div class="stat-card">
@@ -1263,7 +1255,7 @@
             <h2>Clientes e empresas</h2>
             <p>Selecione clientes nos serviços e cadastre novos clientes sem precisar alterar o código.</p>
           </div>
-          <button class="btn btn-secondary" id="syncSeedClientsBtn" type="button">Importar lista inicial</button>
+          <button class="btn btn-secondary" id="syncSeedClientsBtn" type="button" style="display:none;">Importar lista inicial</button>
         </div>
 
         <div class="client-grid">
@@ -1405,6 +1397,10 @@
             <label for="observationInput">Observação</label>
             <input type="text" id="observationInput" placeholder="Ex.: cliente aguardando, urgente, conferir com chefe..." />
           </div>
+          <div class="field full">
+            <label for="attachmentsInput">Anexos</label>
+            <input type="file" id="attachmentsInput" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.xml,.txt" />
+          </div>
         </div>
         <div class="actions" style="margin-top: 16px;">
           <button type="button" class="btn btn-secondary" id="cancelBtn">Cancelar</button>
@@ -1435,8 +1431,16 @@
       doc,
       onSnapshot,
       serverTimestamp,
-      Timestamp
+      query,
+      where,
+      orderBy
     } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+    import {
+      getStorage,
+      ref as storageRef,
+      uploadBytes,
+      getDownloadURL
+    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js";
 
     const employees = [
       { name: "Henrique", color: "#ef4444" },
@@ -1463,635 +1467,14 @@
       "alfafiscalto@gmail.com": { name: "Henrique", role: "Administrador", employee: null },
       "alfacontabilidade2014@gmail.com": { name: "Henrique", role: "Administrador", employee: null },
       "rebcaravila@gmail.com": { name: "Rebeca", role: "Funcionária", employee: "Rebeca" },
-      "morettidavid20@gmail.com": { name: "David", role: "Administrador", employee: null },
+      "morettidavid20@gmail.com": { name: "David", role: "Funcionário", employee: "David" },
       "jhempreendimentos93@gmail.com": { name: "Amanda", role: "Funcionária", employee: "Amanda" },
       "flaviarodriguessoltu92@gmail.com": { name: "Flavia", role: "Funcionária", employee: "Flavia" },
       "joycealmeidabrito01@gmail.com": { name: "Joyce", role: "Funcionária", employee: "Joyce" },
       "julyanarocha@unitins.br": { name: "Julyana", role: "Funcionária", employee: "Julyana" }
     };
 
-    const initialClients = [
-      {
-            "alias": "ACADEMIA MEGA FIT",
-            "name": "ACADEMIA MEGA FIT LTDA",
-            "document": "38.303.484/0001-10"
-      },
-      {
-            "alias": "ACCCD",
-            "name": "ASSOCIACAO COMUNITARIA CULTURAL DE COMUNICACAO DE DIVINOPOLIS DO TOCANTINS - ACCCD",
-            "document": "51.406.476/0001-68"
-      },
-      {
-            "alias": "ADEDIV",
-            "name": "ADEDIV - ASSEMBLEIA DE DEUS DA DIVINOPOLIS - CIADSETA - CAMPO DIVINOPOLIS DO TOCANTINS",
-            "document": "28.900.134/0001-88"
-      },
-      {
-            "alias": "ADELVINO CARLOS DE S",
-            "name": "ADELVINO CARLOS DE SAUZA",
-            "document": "663.158.591/003-25"
-      },
-      {
-            "alias": "AEL",
-            "name": "ASSOCIACAO DOS EMPRESARIOS DE LAJEADO -TO - AEL",
-            "document": "61.451.665/0001-06"
-      },
-      {
-            "alias": "AGRO ANDRADE CASEARA",
-            "name": "LUIZ FERNANDO DE ANDRADE",
-            "document": "34.667.334/0002-16"
-      },
-      {
-            "alias": "AGRO COSTA PRODUTOS",
-            "name": "S R COSTA PRODUTOS AGROPECUARIOS",
-            "document": "65.868.075/0001-34"
-      },
-      {
-            "alias": "AGRO LOPES REPRESENT",
-            "name": "AGRO LOPES REPRESENTACAO LTDA",
-            "document": "52.826.136/0001-59"
-      },
-      {
-            "alias": "AGROP. DIVINOPOLIS",
-            "name": "ELCIO CASTRO CARVALHO EIRELI",
-            "document": "36.239.345/0001-40"
-      },
-      {
-            "alias": "AGROPECUÁRIA ANDRADE",
-            "name": "LUIZ FERNANDO DE ANDRADE - ME",
-            "document": "34.667.334/0001-35"
-      },
-      {
-            "alias": "ALFA CONTABILIDADE",
-            "name": "ALFA CONTABILIDADE E CONSULTORIA LTDA",
-            "document": "65.396.606/0001-33"
-      },
-      {
-            "alias": "ALFRA CONSTRUTORA",
-            "name": "ALFRA CONSTRUTORA LTDA",
-            "document": "41.451.186/0001-82"
-      },
-      {
-            "alias": "AMA FITNES",
-            "name": "AMA FITNESS ACADEMIA DE MUSCULACAO AVANCADA LTDA",
-            "document": "51.447.667/0001-78"
-      },
-      {
-            "alias": "AMBYENTE",
-            "name": "JADER FELIPE DE ALMEIDA BRITO LTDA",
-            "document": "35.297.107/0001-28"
-      },
-      {
-            "alias": "ARAGUAIA GAS",
-            "name": "JAWSON WALLACE MENEZES SANTOS",
-            "document": "25.247.435/0002-47"
-      },
-      {
-            "alias": "ARR BOTELHO EMPREEND",
-            "name": "ARR BOTELHO EMPREENDIMENTOS IMOBILIARIOS LTDA",
-            "document": "10.313.902/0001-31"
-      },
-      {
-            "alias": "ASSENT.  PALMERINHA",
-            "name": "ASSOCIACAO DOS PEQUENOS PRODUTORES RURAIS DO PROJETO DE ASSENTAMENTO PALMERINHA",
-            "document": "04.142.768/0001-50"
-      },
-      {
-            "alias": "ASSOC. C. LUZ E VIDA",
-            "name": "ASSOCIACAO COMUNITARIA LUZ E VIDA - ACLV",
-            "document": "03.130.294/0001-64"
-      },
-      {
-            "alias": "ASSOCIACAO RADIO LAG",
-            "name": "ASSOCIACAO RADIO COMUNITARIA CRIATIVA FM",
-            "document": "08.092.134/0001-91"
-      },
-      {
-            "alias": "ASSOCIACAO SÃO FELIX",
-            "name": "ASSOCIACAO COMERCIAL E EMPRESARIAL DE SAO FELIX DO TOCANTINS",
-            "document": "58.451.852/0001-85"
-      },
-      {
-            "alias": "ATF COLHEITAS",
-            "name": "A FERREIRA",
-            "document": "48.945.376/0001-03"
-      },
-      {
-            "alias": "AUTO MECANICA ALVES",
-            "name": "T F FEITOZA LTDA",
-            "document": "37.861.014/0001-00"
-      },
-      {
-            "alias": "AUTO MOLAS CAPELÃO",
-            "name": "BENTO DIEGO DA S COSTA LTDA",
-            "document": "48.153.979/0001-64"
-      },
-      {
-            "alias": "BARATÃO SUPERMERCADO",
-            "name": "29.524.989 ARNOU ARAUJO ROCHA",
-            "document": "29.524.989/0001-14"
-      },
-      {
-            "alias": "C J B DE BRITO E CIA",
-            "name": "C J B DE BRITO E CIA LTDA",
-            "document": "08.853.179/0001-31"
-      },
-      {
-            "alias": "CENTRAL DISTRIBUIDOR",
-            "name": "LUCAS DA SILVA ALVES EIRELI",
-            "document": "38.828.053/0001-78"
-      },
-      {
-            "alias": "CERAMICA DONA MARIA",
-            "name": "W GOMES WANDERLEY LTDA",
-            "document": "27.854.450/0001-06"
-      },
-      {
-            "alias": "CERAMICA PIEDADE",
-            "name": "HAMILTON EDSON ARAUJO",
-            "document": "42.013.389/0001-50"
-      },
-      {
-            "alias": "COM. COMPRE BEM",
-            "name": "REGES S CORDEIRO EIRELI",
-            "document": "43.107.220/0001-21"
-      },
-      {
-            "alias": "COMERCIAL BARBOSA",
-            "name": "BARBOSA & DIAS LTDA",
-            "document": "05.525.388/0001-68"
-      },
-      {
-            "alias": "COMERCIAL CUPIM",
-            "name": "J L P DE SOUZA",
-            "document": "10.922.807/0001-35"
-      },
-      {
-            "alias": "COMERCIAL SURUBIM",
-            "name": "CECILIO D S CARVALHO LTDA",
-            "document": "48.997.510/0001-01"
-      },
-      {
-            "alias": "CONNECTMAIS",
-            "name": "ROMARIO DA SILVA CABRAL EIRELI - ME",
-            "document": "27.502.083/0001-73"
-      },
-      {
-            "alias": "CONTRUTORA LD",
-            "name": "M D V COELHO LTDA",
-            "document": "47.857.688/0001-94"
-      },
-      {
-            "alias": "CONVENIENCIA LOPES",
-            "name": "CLAUDIO LOPES DO COUTO EIRELI",
-            "document": "31.844.140/0001-70"
-      },
-      {
-            "alias": "COOP. DOS GARIMPEIRO",
-            "name": "COOPERATIVA DOS GARIMPEIROS DO TOCANTINS",
-            "document": "36.669.397/0001-56"
-      },
-      {
-            "alias": "D’AGRO",
-            "name": "D’AGRO REPRESENTAÇÕES TECNOLOGIA AGRÍCOLA E SERVIÇOS LTDA",
-            "document": "57.955.714/0001-70"
-      },
-      {
-            "alias": "DCONEKTE",
-            "name": "DCONEKTE MULTIMIDIA LTDA",
-            "document": "15.097.886/0001-00"
-      },
-      {
-            "alias": "DCONEKTE FILIAL",
-            "name": "DCONEKTE MULTIMIDIA LTDA",
-            "document": "15.097.886/0002-91"
-      },
-      {
-            "alias": "DENES DECORAÇÕES",
-            "name": "V LIMA DE OLIVEIRA LTDA",
-            "document": "51.826.723/0001-85"
-      },
-      {
-            "alias": "DERMALASER",
-            "name": "ISNARA RIBEIRO FONTES LTDA",
-            "document": "39.669.723/0001-13"
-      },
-      {
-            "alias": "DIST. EN. AMIGOS",
-            "name": "JOSE DINO A ROSA",
-            "document": "32.603.725/0001-60"
-      },
-      {
-            "alias": "DISTRIBUID. PRECOBOM",
-            "name": "A MOREIRA DA SILVA LTDA",
-            "document": "57.826.783/0001-84"
-      },
-      {
-            "alias": "DK FABRICA DE DOCES",
-            "name": "K A COMERCIO E EMPREENDIMENTOS LTDA",
-            "document": "36.374.797/0001-34"
-      },
-      {
-            "alias": "EDIANE BRITO SHOWROO",
-            "name": "E FERREIRA BRITO LTDA",
-            "document": "51.501.129/0001-14"
-      },
-      {
-            "alias": "ELETRO LEO",
-            "name": "JOSE LEONARDO SIQUEIRA",
-            "document": "48.705.037/0001-41"
-      },
-      {
-            "alias": "ELETRO LIDER",
-            "name": "N MOREIRA DOS SANTOS",
-            "document": "45.321.347/0001-74"
-      },
-      {
-            "alias": "ELETROSILOS",
-            "name": "ELETROSILOS LTDA",
-            "document": "62.451.934/0001-05"
-      },
-      {
-            "alias": "EMPREITEIRA J F NOVA",
-            "name": "J FRANCISCO P S LTDA",
-            "document": "66.500.791/0001-27"
-      },
-      {
-            "alias": "EMPREITERA JOSE FRAN",
-            "name": "J FRANCISCO PEREIRA DA SILVA LTDA",
-            "document": "53.504.066/0001-85"
-      },
-      {
-            "alias": "ENGENORT",
-            "name": "ENGENORT CONSTRUTORA LTDA",
-            "document": "55.145.334/0001-45"
-      },
-      {
-            "alias": "EVOLUT ENGENHARIA",
-            "name": "EVOLUT ENGENHARIA LTDA",
-            "document": "65.845.357/0001-16"
-      },
-      {
-            "alias": "FABIO COLHEITAS",
-            "name": "27.096.961 FABIO OLIVEIRA FERREIRA",
-            "document": "27.096.961/0001-06"
-      },
-      {
-            "alias": "FAZ. VALE DA PROMESS",
-            "name": "FAZENDA VALE DA PROMESSA",
-            "document": "008.078.401/001-26"
-      },
-      {
-            "alias": "FAZENDA BOA VISTA",
-            "name": "WAINER GOMES WANDERLEY",
-            "document": "158.925.731/001-18"
-      },
-      {
-            "alias": "FAZENDA BURITI",
-            "name": "DIVINO EUGENIO DOS SANTOS",
-            "document": "382.064.201/001-67"
-      },
-      {
-            "alias": "FAZENDA NOVO HORIZON",
-            "name": "LUIZ ANTONIO MIRANDA",
-            "document": "328.421.639/001-21"
-      },
-      {
-            "alias": "FAZENDA SÃO JOSE",
-            "name": "ADARCIRI GONCALVES MOREIRA",
-            "document": "044.916.291/001-08"
-      },
-      {
-            "alias": "FP PRODUCOES",
-            "name": "F S FERREIRA LTDA",
-            "document": "21.072.243/0001-05"
-      },
-      {
-            "alias": "GAS SUPER 10",
-            "name": "JAWSON WALLACE MENEZES SANTOS",
-            "document": "25.247.435/0001-66"
-      },
-      {
-            "alias": "GS SOLUCOES E EVENTO",
-            "name": "GS LOCAÇÕES LTDA",
-            "document": "14.841.840/0001-91"
-      },
-      {
-            "alias": "HL PISCINAS",
-            "name": "ADELVINO CARLOS DE SOUZA",
-            "document": "42.308.433/0001-59"
-      },
-      {
-            "alias": "HL PISCINAS FILIAL",
-            "name": "A C DE SOUZA LTDA",
-            "document": "42.308.433/0002-30"
-      },
-      {
-            "alias": "HOTEL GOIANO",
-            "name": "E C DOS SANTOS FERREIRA",
-            "document": "36.253.262/0001-05"
-      },
-      {
-            "alias": "IGREJA CRISTO E VIDA",
-            "name": "IGREJA ASSEMBLEIA DE DEUS MINISTERIO CRISTO E VIDA",
-            "document": "37.128.627/0001-32"
-      },
-      {
-            "alias": "IGREJA EXERCITO DE D",
-            "name": "IGREJA PENTECOSTAL EXERCITO DE DEUS",
-            "document": "24.757.013/0001-78"
-      },
-      {
-            "alias": "IGREJA METANOIA",
-            "name": "IGREJA ASSEMBLEIA DE DEUS PROJETO METANOIA MISSOES SEM FRONTEIRAS - IADPMF",
-            "document": "31.540.112/0001-69"
-      },
-      {
-            "alias": "IGREJA RENASCER",
-            "name": "IGREJA ASSEMBLEIA DE DEUS RENASCER - IADR",
-            "document": "48.340.804/0001-66"
-      },
-      {
-            "alias": "IMOB FAZENDAS TOCANT",
-            "name": "G R PEREIRA LTDA",
-            "document": "44.041.372/0001-31"
-      },
-      {
-            "alias": "J CARDOSO DE SA",
-            "name": "J CARDOSO DE SA LTDA",
-            "document": "18.342.525/0001-70"
-      },
-      {
-            "alias": "JC INFORMATICA",
-            "name": "I D LIMA LTDA",
-            "document": "42.232.921/0001-20"
-      },
-      {
-            "alias": "JH EMPREENDIMENTOS",
-            "name": "JOSE HENRIQUE DE ALMEIDA BRITO",
-            "document": "24.579.102/0001-71"
-      },
-      {
-            "alias": "JK SERVICOS DE CONST",
-            "name": "JK SERVICOS DE CONSTRUTORA LTDA",
-            "document": "26.890.071/0001-09"
-      },
-      {
-            "alias": "JSC MATERIAS",
-            "name": "JOSE CARLOS SILVA LOBO EIRELI",
-            "document": "32.482.346/0001-60"
-      },
-      {
-            "alias": "KYNAR COMUNICACAO",
-            "name": "KYNAR COMUNICACAO VISUAL LTDA",
-            "document": "48.761.179/0001-26"
-      },
-      {
-            "alias": "LIMIAR",
-            "name": "PAULO ANTONIO DA SILVA",
-            "document": "41.544.293/0001-55"
-      },
-      {
-            "alias": "LIMPISCINAS",
-            "name": "EDIMILSON LOPES DA CRUZ",
-            "document": "01.129.611/0001-05"
-      },
-      {
-            "alias": "LUIZ CLAUDIO",
-            "name": "LUIZ CLAUDIO REZENDE DE AZEVEDO",
-            "document": "35.934.583/0001-02"
-      },
-      {
-            "alias": "M G DE SOUZA LTDA",
-            "name": "M G DE SOUZA LTDA",
-            "document": "48.581.887/0001-85"
-      },
-      {
-            "alias": "M. O. MUNCK E TRANSP",
-            "name": "M.O.M. DA ROSA",
-            "document": "15.740.818/0001-18"
-      },
-      {
-            "alias": "MANAS VARIEDADES",
-            "name": "IRACELIA AIRES WANDERLEY 03469564124",
-            "document": "42.253.854/0001-20"
-      },
-      {
-            "alias": "MARCOS CARVALHO",
-            "name": "MARCOS CARVALHO MARIANO",
-            "document": "005.366.111/001-14"
-      },
-      {
-            "alias": "MARI K AVIAMENT",
-            "name": "MARI K AVIAMENTOS LTDA",
-            "document": "55.061.621/0001-77"
-      },
-      {
-            "alias": "MAT TONHÃO",
-            "name": "A BOMFIM DA SILVA RODRIGUES LTDA",
-            "document": "47.598.506/0001-08"
-      },
-      {
-            "alias": "MAYCON DIAGNOSTICO",
-            "name": "MAYCON DIAGNOSTICO LTDA",
-            "document": "61.110.586/0001-31"
-      },
-      {
-            "alias": "MERCEARIA ZORO",
-            "name": "Z MENDES DE CARVALHO LTDA",
-            "document": "60.299.566/0001-98"
-      },
-      {
-            "alias": "MINEBR NATIVIDADE",
-            "name": "MINEBR NATIVIDADE LTDA",
-            "document": "46.593.966/0001-80"
-      },
-      {
-            "alias": "MUNDIAL PNEUS",
-            "name": "VALTER RODRIGUES OLIVEIRA - ME",
-            "document": "27.905.815/0001-76"
-      },
-      {
-            "alias": "NETO",
-            "name": "ANTONIO ALVES DE ALMEIDA NETO",
-            "document": "26.941.466/0001-85"
-      },
-      {
-            "alias": "NOGUEIRA ELETRICA",
-            "name": "NOGUEIRA CONSTRUCOES E INFRAESTRUTURA LTDA",
-            "document": "33.685.328/0001-48"
-      },
-      {
-            "alias": "NORTE & NORDESTE",
-            "name": "NORTE & NORDESTE MINERIOS DO BRASIL LTDA",
-            "document": "57.296.867/0001-53"
-      },
-      {
-            "alias": "NORTE NAPAS",
-            "name": "C P DE ARAUJO LTDA",
-            "document": "43.677.280/0001-80"
-      },
-      {
-            "alias": "NUTRI MAIS",
-            "name": "RESTAURANTE E LANCHONETE NUTRI MAIS LTDA",
-            "document": "49.931.842/0001-56"
-      },
-      {
-            "alias": "OTICA ALTO OLHAR PSO",
-            "name": "L S FERREIRA LTDA",
-            "document": "18.409.866/0003-88"
-      },
-      {
-            "alias": "OTICA NOVO OLHAR",
-            "name": "L S FERREIRA LTDA",
-            "document": "18.409.866/0001-16"
-      },
-      {
-            "alias": "OTICA NOVO OLHAR DIV",
-            "name": "L S FERREIRA LTDA",
-            "document": "18.409.866/0002-05"
-      },
-      {
-            "alias": "OTICAS ALTO OLHAR",
-            "name": "41.514.982 JOAO OLIVEIRA DE ALENCAR",
-            "document": "41.514.982/0001-17"
-      },
-      {
-            "alias": "OTICAS SANTANA",
-            "name": "49.057.074 HEITOR SOARES FERREIRA",
-            "document": "49.057.074/0001-53"
-      },
-      {
-            "alias": "PANIFICADORA TOCANTI",
-            "name": "PAULO ALVES DOS SANTOS",
-            "document": "33.090.554/0001-86"
-      },
-      {
-            "alias": "PÃO IMPERIO PANIFICA",
-            "name": "S DE OLIVEIRA SOUZA LTDA",
-            "document": "34.466.799/0001-28"
-      },
-      {
-            "alias": "PEDRA BRANCA",
-            "name": "PEDRA BRANCA MATERIAL DE CONSTRUCAO LTDA",
-            "document": "24.776.447/0001-15"
-      },
-      {
-            "alias": "POLO AGRO",
-            "name": "POLO DEFENSIVOS AGRICOLAS E FERRAGISTA LTDA",
-            "document": "34.104.358/0001-86"
-      },
-      {
-            "alias": "PONTO DA PACOCA",
-            "name": "MARCELO FARIAS DE OLIVEIRA 24150967253",
-            "document": "26.634.305/0001-49"
-      },
-      {
-            "alias": "POSTO DE MEDICAMENTO",
-            "name": "F TAVARES PEREIRA LTDA",
-            "document": "56.900.670/0001-19"
-      },
-      {
-            "alias": "POUSADA POR DO SOL",
-            "name": "POUSADA POR DO SOL LTDA",
-            "document": "59.794.076/0001-89"
-      },
-      {
-            "alias": "R. L. REPRESENTACOES",
-            "name": "R. L. REPRESENTACOES COMERCIAIS LTDA",
-            "document": "27.403.058/0001-32"
-      },
-      {
-            "alias": "RIBRAX",
-            "name": "S R DE ABREU LTDA",
-            "document": "21.359.066/0001-42"
-      },
-      {
-            "alias": "RMB PROJETOS E CONSU",
-            "name": "RMB PROJETOS E CONSULTORIA LTDA",
-            "document": "20.476.712/0001-99"
-      },
-      {
-            "alias": "RODRIGUES BARBEARIA",
-            "name": "RODRIGUES BARBEARIA LTDA",
-            "document": "43.606.750/0001-14"
-      },
-      {
-            "alias": "S R MARIANOPOLIS F1",
-            "name": "S R DE ABREU LTDA",
-            "document": "21.359.066/0002-23"
-      },
-      {
-            "alias": "SANTA CLARA C DOS SA",
-            "name": "C DOS SANTOS CARVALHO",
-            "document": "29.860.447/0001-12"
-      },
-      {
-            "alias": "SANTA CLARA NETO",
-            "name": "SANTA CLARA SERVICOS E LOCACOES LTDA",
-            "document": "55.804.658/0001-48"
-      },
-      {
-            "alias": "SÃO PEDRO EMPREENDIM",
-            "name": "LL WANDERLEY - ME",
-            "document": "35.230.650/0001-08"
-      },
-      {
-            "alias": "SINDICATO TRAB. DIV.",
-            "name": "SINDICATO DOS TRABALHADORES E TRABALHADORAS RURAIS AGRICULTORES E AGRICULTORAS FAMILIARES DE DIVINOPOLIS DO TOCANTINS - TO",
-            "document": "24.852.063/0001-34"
-      },
-      {
-            "alias": "SONHO DE CRIANÇA",
-            "name": "M V A SANTOS LTDA",
-            "document": "08.332.823/0001-26"
-      },
-      {
-            "alias": "SOS BORRACHARIA",
-            "name": "JOSE PEREIRA DA SILVA",
-            "document": "13.994.861/0001-84"
-      },
-      {
-            "alias": "TIAGO MIGUEL SILVANI",
-            "name": "TIAGO MIGUEL SILVANI",
-            "document": "100.130.216/002-20"
-      },
-      {
-            "alias": "TORNEADORA ALADIM",
-            "name": "DERGILIO GOMES DA SILVA - ME",
-            "document": "24.201.900/0001-65"
-      },
-      {
-            "alias": "VESTY FASHION",
-            "name": "IRAILDE AIRES WANDERLEY",
-            "document": "15.152.303/0001-05"
-      },
-      {
-            "alias": "VIVEIRO JARDIM PARIS",
-            "name": "RAIMUNDO F DA SILVA LTDA",
-            "document": "22.850.794/0001-15"
-      },
-      {
-            "alias": "WSC CONSTRUTORA",
-            "name": "WSC CONSTUTORA LTDA",
-            "document": "64.470.327/0001-00"
-      },
-      {
-            "alias": "WSC ENGENHARIA",
-            "name": "WSC ENGENHARIA GEOLOGIA SERVICOS AMBIENTAIS E REPRESENTACOES LTDA",
-            "document": "48.168.684/0001-61"
-      },
-      {
-            "alias": "WSC MINERACAO & MEIO",
-            "name": "WSC MINERACAO & MEIO AMBIENTE LTDA",
-            "document": "59.090.155/0001-09"
-      },
-      {
-            "alias": "Y O WATANABE",
-            "name": "Y O WATANABE LTDA",
-            "document": "64.137.551/0001-84"
-      }
-];
+    const initialClients = [];
 
     function normalizeEmail(email) {
       return String(email || "").trim().toLowerCase();
@@ -2118,7 +1501,7 @@
          Senha: defina a senha principal informada pelo escritório.
       3) Firestore Database > Create database.
       4) Regras recomendadas: liberar somente usuários autorizados listados no sistema.
-         Cole as regras atualizadas informadas junto com este arquivo no Firestore.
+         Cole as regras atualizadas informadas junto com este arquivo no Firestore e no Storage.
       5) Copie as credenciais do app Web e substitua o objeto firebaseConfig abaixo somente se trocar o projeto Firebase.
     */
     const firebaseConfig = {
@@ -2133,6 +1516,7 @@
     let app = null;
     let auth = null;
     let db = null;
+    let storage = null;
     let unsubscribe = null;
     let unsubscribeClients = null;
     let tasks = [];
@@ -2196,40 +1580,12 @@
     function showToast(message) {
       toast.textContent = message;
       toast.classList.add("show");
-      setTimeout(() => toast.classList.remove("show"), 3900);
+      setTimeout(() => toast.classList.remove("show"), 7000);
     }
 
     function setConnection(status, message) {
       connectionPulse.className = `pulse ${status}`;
       connectionText.textContent = message;
-    }
-
-    function showSystemError(message) {
-      const box = document.getElementById("systemErrorBox");
-      if (!box) return;
-      box.textContent = message;
-      box.classList.add("show");
-    }
-
-    function clearSystemError() {
-      const box = document.getElementById("systemErrorBox");
-      if (!box) return;
-      box.textContent = "";
-      box.classList.remove("show");
-    }
-
-    function explainFirestoreError(error) {
-      const code = error?.code || "";
-      if (code === "permission-denied") {
-        return "Firestore bloqueou a leitura. Publique as regras do Firestore com o e-mail logado autorizado. O botão Novo serviço continua disponível, mas salvar também depende dessas regras.";
-      }
-      if (code === "unavailable") {
-        return "Firestore indisponível no momento ou internet instável. Tente atualizar a página.";
-      }
-      if (code === "failed-precondition") {
-        return "Firestore pediu índice/condição de consulta. Esta versão usa leitura simples; atualize com Ctrl + F5.";
-      }
-      return `Erro ao carregar dados do Firestore${code ? ` (${code})` : ""}. Confira regras do Firestore, login e conexão.`;
     }
 
 
@@ -2313,24 +1669,7 @@
     }
 
     async function syncSeedClients() {
-      if (!firebaseReady || !currentUser) {
-        showToast("Faça login antes de importar clientes.");
-        return;
-      }
-      const confirmSync = confirm(`Importar ${initialClients.length} clientes da planilha para o Firestore? Faça isso apenas uma vez.`);
-      if (!confirmSync) return;
-      let count = 0;
-      for (const client of initialClients) {
-        await addDoc(collection(db, "clientes"), {
-          ...client,
-          createdAt: serverTimestamp(),
-          createdBy: currentUser.email,
-          source: "planilha",
-          active: true
-        });
-        count += 1;
-      }
-      showToast(`${count} clientes enviados para o Firestore.`);
+      showToast("A lista fixa foi removida do HTML. Para carregar clientes no Firestore, use o botão Importar backup com o arquivo JSON de clientes.");
     }
 
     function setView(view) {
@@ -2426,7 +1765,7 @@
       const timestamp = now.toISOString();
       const backup = {
         sistema: "Alfa Contabilidade - Sistema de Serviços",
-        versao: "1.4",
+        versao: "1.5",
         exportadoEm: timestamp,
         exportadoPor: currentUser?.email || null,
         observacao: "Backup manual gerado pelo navegador. Para backup automático real, use Firebase/Google Cloud com Cloud Functions ou Cloud Scheduler.",
@@ -2449,78 +1788,6 @@
       showToast("Backup exportado em JSON com tarefas e clientes.");
     }
 
-
-    function normalizeBackupTimestamp(value) {
-      if (!value) return null;
-      if (value?.toMillis) return value;
-      if (typeof value === "string") {
-        const parsed = Date.parse(value);
-        return Number.isNaN(parsed) ? null : Timestamp.fromMillis(parsed);
-      }
-      if (typeof value.seconds === "number") {
-        return Timestamp.fromMillis((value.seconds * 1000) + Math.floor((value.nanoseconds || 0) / 1000000));
-      }
-      return null;
-    }
-
-    function cleanBackupRecord(record, fallbackUserEmail) {
-      const cleaned = { ...record };
-      delete cleaned.id;
-      delete cleaned.source;
-      ["createdAt", "updatedAt"].forEach(field => {
-        const normalized = normalizeBackupTimestamp(cleaned[field]);
-        if (normalized) cleaned[field] = normalized;
-        else if (field in cleaned) delete cleaned[field];
-      });
-      cleaned.restoredAt = serverTimestamp();
-      cleaned.restoredBy = fallbackUserEmail || null;
-      return cleaned;
-    }
-
-    async function importBackupJsonFile(file) {
-      if (!isAdminUser()) {
-        showToast("A importação de backup é exclusiva do administrador.");
-        return;
-      }
-      if (!file) return;
-
-      const text = await file.text();
-      let backup;
-      try {
-        backup = JSON.parse(text);
-      } catch (error) {
-        showToast("Arquivo inválido. Selecione um backup JSON exportado pelo sistema.");
-        return;
-      }
-
-      const backupTasks = Array.isArray(backup.tarefas) ? backup.tarefas : [];
-      const backupClients = Array.isArray(backup.clientes) ? backup.clientes : [];
-      if (!backupTasks.length && !backupClients.length) {
-        showToast("O backup não possui tarefas nem clientes para importar.");
-        return;
-      }
-
-      const confirmImport = confirm(`Importar backup com ${backupTasks.length} tarefa(s) e ${backupClients.length} cliente(s)? Registros com o mesmo ID serão atualizados.`);
-      if (!confirmImport) return;
-
-      try {
-        for (const item of backupTasks) {
-          const cleaned = cleanBackupRecord(item, currentUser?.email);
-          if (item.id) await setDoc(doc(db, "tarefas", item.id), cleaned, { merge: true });
-          else await addDoc(collection(db, "tarefas"), cleaned);
-        }
-        for (const item of backupClients) {
-          const cleaned = cleanBackupRecord(item, currentUser?.email);
-          if (item.id) await setDoc(doc(db, "clientes", item.id), cleaned, { merge: true });
-          else await addDoc(collection(db, "clientes"), cleaned);
-        }
-        showToast("Backup importado com sucesso.");
-      } catch (error) {
-        console.error(error);
-        showToast(error?.message || "Não foi possível importar o backup. Confira as regras do Firestore.");
-      }
-    }
-
     function remindAdminBackup() {
       if (!isAdminUser()) return;
       const today = todayISO();
@@ -2540,14 +1807,7 @@
 
       const admin = isAdminUser() || !currentUserProfile;
       const ownEmployee = currentEmployeeName();
-      const visibleEmployees = admin ? employees : employees.filter(employee => employee.name === ownEmployee);
-
-      employees.forEach(employee => {
-        const option = document.createElement("option");
-        option.value = employee.name;
-        option.textContent = employee.name;
-        employeeInput.appendChild(option);
-      });
+      const visibleEmployees = employees;
 
       if (admin) {
         const allBtn = document.createElement("button");
@@ -2576,6 +1836,11 @@
           <span class="employee-count" id="count-${employee.name}">0</span>
         `;
         employeeList.appendChild(btn);
+
+        const option = document.createElement("option");
+        option.value = employee.name;
+        option.textContent = employee.name;
+        employeeInput.appendChild(option);
 
         if (reportEmployeeInput) {
           const reportOption = document.createElement("option");
@@ -2676,6 +1941,7 @@
       const overdue = isOverdue(task);
       const oldRequest = task.requestDate && task.requestDate < todayISO();
       const dueToday = task.deadline && task.status !== "concluido" && task.deadline === todayISO();
+      const attachments = Array.isArray(task.attachments) ? task.attachments : [];
       const nextActionLabel = task.status === "pendente" ? "Iniciar" : task.status === "andamento" ? "Concluir" : "Reabrir";
       const nextActionClass = task.status === "pendente" ? "btn-start" : task.status === "andamento" ? "btn-finish" : "btn-reopen";
       const dueClass = overdue ? "visual-vencido" : dueToday ? "visual-hoje" : task.status === "concluido" ? "visual-ok" : "";
@@ -2700,7 +1966,17 @@
           ${dueToday ? `<span class="pill visual-hoje">⚠️ Vence hoje</span>` : ""}
           ${oldRequest ? `<span class="pill priority-media">Pedido anterior a hoje</span>` : ""}
           ${task.observation ? `<span class="pill">📝 ${escapeHTML(task.observation)}</span>` : ""}
+          ${attachments.length ? `<span class="pill">📎 ${attachments.length} anexo(s)</span>` : ""}
         </div>
+        ${attachments.length ? `
+          <div class="attachment-list">
+            ${attachments.map(file => `
+              <a class="attachment-link" href="${escapeHTML(file.url)}" target="_blank" rel="noopener">
+                📎 ${escapeHTML(file.name || "Anexo")}
+              </a>
+            `).join("")}
+          </div>
+        ` : ""}
         <div class="task-actions">
           <button class="icon-btn" data-action="edit" data-id="${task.id}">Editar</button>
           <button class="icon-btn ${nextActionClass}" data-action="next" data-id="${task.id}">${nextActionLabel}</button>
@@ -2744,12 +2020,12 @@
     }
 
     function openModal(task = null) {
+      if (!employeeInput.options.length) buildEmployees();
       editingTaskId = task?.id || null;
       modalTitle.textContent = task ? "Editar serviço" : "Novo serviço";
       document.getElementById("taskId").value = task?.id || "";
-      const defaultEmployee = currentUserProfile?.employee || employees[0].name;
-      employeeInput.value = currentEmployeeName() || task?.employee || (selectedEmployee === "todos" ? defaultEmployee : selectedEmployee);
-      if (isAdminUser()) employeeInput.value = task?.employee || (selectedEmployee === "todos" ? defaultEmployee : selectedEmployee);
+      const defaultEmployee = currentEmployeeName() || employees[0].name;
+      employeeInput.value = task?.employee || (selectedEmployee !== "todos" ? selectedEmployee : defaultEmployee);
       employeeInput.disabled = false;
       document.getElementById("requestDateInput").value = task?.requestDate || todayISO();
       document.getElementById("deadlineInput").value = task?.deadline || todayISO();
@@ -2774,6 +2050,16 @@
       editingTaskId = null;
     }
 
+
+    window.forceOpenModal = function() {
+      try {
+        openModal();
+      } catch (error) {
+        console.error("Erro ao abrir Novo serviço:", error);
+        alert("Não foi possível abrir a janela de Novo serviço. Atualize a página com Ctrl + F5 e tente novamente.");
+      }
+    };
+
     function getNextStatus(status) {
       if (status === "pendente") return "andamento";
       if (status === "andamento") return "concluido";
@@ -2782,7 +2068,79 @@
 
 
 
-    
+    function getSelectedAttachmentFiles() {
+      const input = document.getElementById("attachmentsInput");
+      return Array.from(input?.files || []);
+    }
+
+    function makeSafeFileName(fileName) {
+      const cleanName = String(fileName || "arquivo")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-zA-Z0-9._-]+/g, "-")
+        .replace(/-+/g, "-")
+        .replace(/^-|-$/g, "");
+      return cleanName || `arquivo-${Date.now()}`;
+    }
+
+    function explainFirebaseUploadError(error) {
+      const code = error?.code || "";
+      if (code.includes("storage/unauthorized")) {
+        return "O serviço foi bloqueado pelas regras do Firebase Storage. Atualize as regras do Storage com os e-mails autorizados.";
+      }
+      if (code.includes("storage/bucket-not-found")) {
+        return "O bucket do Firebase Storage não foi encontrado. Confira se o Storage está ativado e se o storageBucket do firebaseConfig está correto.";
+      }
+      if (code.includes("storage/object-not-found")) {
+        return "O arquivo foi enviado, mas a URL não foi localizada no Storage. Confira o bucket e tente novamente.";
+      }
+      if (code.includes("storage/canceled")) {
+        return "O envio do anexo foi cancelado antes de terminar.";
+      }
+      if (code.includes("storage/quota-exceeded")) {
+        return "A cota do Firebase Storage foi excedida. Verifique o plano/cota no Firebase.";
+      }
+      return `Falha ao anexar arquivo: ${error?.message || "erro desconhecido no Firebase Storage"}`;
+    }
+
+    async function uploadTaskAttachments(taskId, files = getSelectedAttachmentFiles()) {
+      if (!files.length) return [];
+      if (!storage) throw new Error("Storage não configurado.");
+      if (!currentUser?.email) throw new Error("Usuário não identificado para enviar anexos.");
+
+      const uploaded = [];
+      for (const file of files) {
+        const safeName = makeSafeFileName(file.name);
+        const uniqueName = `${Date.now()}-${crypto.randomUUID()}-${safeName}`;
+        const path = `tarefas/${taskId}/${uniqueName}`;
+        const fileRef = storageRef(storage, path);
+
+        try {
+          await uploadBytes(fileRef, file, {
+            contentType: file.type || "application/octet-stream",
+            customMetadata: {
+              uploadedBy: currentUser.email,
+              originalName: file.name,
+              taskId
+            }
+          });
+          const url = await getDownloadURL(fileRef);
+          uploaded.push({
+            name: file.name,
+            url,
+            path,
+            type: file.type || "application/octet-stream",
+            size: file.size,
+            uploadedAt: new Date().toISOString(),
+            uploadedBy: currentUser.email
+          });
+        } catch (error) {
+          console.error("Erro ao enviar anexo para o Firebase Storage:", error);
+          throw new Error(explainFirebaseUploadError(error));
+        }
+      }
+      return uploaded;
+    }
 
     async function saveTask(event) {
       event.preventDefault();
@@ -2804,6 +2162,11 @@
         updatedBy: currentUser?.email || null
       };
 
+      if (!payload.employee) {
+        showToast("Selecione o funcionário responsável pelo serviço.");
+        return;
+      }
+
       if (!payload.serviceType) {
         showToast("Informe o tipo de serviço antes de salvar.");
         return;
@@ -2824,31 +2187,41 @@
         return;
       }
 
+      const selectedFiles = getSelectedAttachmentFiles();
       const submitButton = taskForm.querySelector('button[type="submit"]');
       const originalSubmitText = submitButton?.textContent || "Salvar serviço";
 
       try {
         if (submitButton) {
           submitButton.disabled = true;
-          submitButton.textContent = editingTaskId ? "Atualizando serviço..." : "Salvando serviço...";
+          submitButton.textContent = selectedFiles.length ? "Enviando anexos..." : "Salvando...";
         }
 
         if (editingTaskId) {
-          await updateDoc(doc(db, "tarefas", editingTaskId), payload);
-          showToast("Serviço atualizado com sucesso.");
+          const previousTask = tasks.find(item => item.id === editingTaskId);
+          const newAttachments = await uploadTaskAttachments(editingTaskId, selectedFiles);
+          if (submitButton) submitButton.textContent = "Atualizando serviço...";
+          await updateDoc(doc(db, "tarefas", editingTaskId), {
+            ...payload,
+            attachments: [...(previousTask?.attachments || []), ...newAttachments]
+          });
+          showToast(newAttachments.length ? "Serviço atualizado com anexo(s)." : "Serviço atualizado com sucesso.");
         } else {
           const newDocRef = doc(collection(db, "tarefas"));
+          const newAttachments = await uploadTaskAttachments(newDocRef.id, selectedFiles);
+          if (submitButton) submitButton.textContent = "Gravando serviço...";
           await setDoc(newDocRef, {
             ...payload,
+            attachments: newAttachments,
             createdAt: serverTimestamp(),
             createdBy: currentUser.email
           });
-          showToast("Serviço criado com sucesso.");
+          showToast(newAttachments.length ? "Serviço criado com anexo(s)." : "Serviço criado com sucesso.");
         }
         closeModal();
       } catch (error) {
         console.error(error);
-        showToast(error?.message || "Não foi possível salvar. Confira as regras do Firestore e a configuração Firebase.");
+        showToast(error?.message || "Não foi possível salvar. Confira as regras do Firestore/Storage e a configuração Firebase.");
       } finally {
         if (submitButton) {
           submitButton.disabled = false;
@@ -2933,7 +2306,6 @@
       buildEmployees();
       document.getElementById("allTasksBtn").style.display = isAdminUser() ? "inline-flex" : "none";
       document.getElementById("exportBackupBtn").style.display = isAdminUser() ? "inline-flex" : "none";
-      document.getElementById("importBackupBtn").style.display = isAdminUser() ? "inline-flex" : "none";
       loginScreen.style.display = "none";
       appShell.classList.add("visible");
       setConnection("online", "Conectado ao Firebase");
@@ -2956,14 +2328,16 @@
       buildEmployees();
       document.getElementById("allTasksBtn").style.display = "inline-flex";
       document.getElementById("exportBackupBtn").style.display = "none";
-      document.getElementById("importBackupBtn").style.display = "none";
       render();
       renderClients();
     }
 
     function listenTasks() {
       if (unsubscribe) unsubscribe();
-      unsubscribe = onSnapshot(collection(db, "tarefas"), (snapshot) => {
+      const baseCollection = collection(db, "tarefas");
+      const tasksQuery = query(baseCollection);
+
+      unsubscribe = onSnapshot(tasksQuery, (snapshot) => {
         tasks = snapshot.docs
           .map(docSnap => ({ id: docSnap.id, ...docSnap.data() }))
           .sort((a, b) => {
@@ -2971,11 +2345,13 @@
             const bTime = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
             return bTime - aTime;
           });
+        setConnection("online", "Conectado ao Firebase");
         render();
       }, (error) => {
         console.error(error);
         setConnection("offline", "Erro ao carregar dados");
-        showToast("Erro ao ouvir o Firestore. Verifique as regras do banco de dados e os e-mails autorizados.");
+        const code = error?.code ? ` (${error.code})` : "";
+        showToast(`Erro ao carregar tarefas${code}. Confira principalmente as regras do Firestore e se o e-mail logado está autorizado.`);
       });
     }
 
@@ -2990,7 +2366,7 @@
         buildClientDatalist();
       }, (error) => {
         console.error(error);
-        showToast(`Não foi possível carregar clientes${error?.code ? ` (${error.code})` : ""}. O cadastro de serviço continua disponível.`);
+        showToast("Não foi possível carregar a lista de clientes do Firestore.");
         clients = getMergedClients([]);
         renderClients();
       });
@@ -3006,6 +2382,7 @@
         app = initializeApp(firebaseConfig);
         auth = getAuth(app);
         db = getFirestore(app);
+        storage = getStorage(app, `gs://${firebaseConfig.storageBucket}`);
         firebaseReady = true;
         firebaseWarning.style.display = "none";
         setConnection("online", "Firebase pronto para login");
@@ -3039,14 +2416,7 @@
     document.getElementById("logoutBtn").addEventListener("click", handleLogout);
     document.getElementById("resetPasswordBtn").addEventListener("click", handlePasswordReset);
     document.getElementById("exportBackupBtn").addEventListener("click", exportBackupJson);
-    document.getElementById("importBackupBtn").addEventListener("click", () => document.getElementById("importBackupInput").click());
-    document.getElementById("importBackupInput").addEventListener("change", async (event) => {
-      await importBackupJsonFile(event.target.files?.[0]);
-      event.target.value = "";
-    });
-    document.getElementById("openModalBtn").addEventListener("click", () => {
-      try { openModal(); } catch (error) { console.error(error); showToast("Erro ao abrir Novo serviço. Use Ctrl + F5 e tente novamente."); }
-    });
+    document.getElementById("openModalBtn").addEventListener("click", () => openModal());
     document.getElementById("closeModalBtn").addEventListener("click", closeModal);
     document.getElementById("cancelBtn").addEventListener("click", closeModal);
     document.getElementById("allTasksBtn").addEventListener("click", () => {
