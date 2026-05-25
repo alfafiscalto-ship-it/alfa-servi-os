@@ -134,6 +134,41 @@
       line-height: 1.5;
     }
 
+
+
+    .login-version-badge {
+      position: fixed;
+      right: 22px;
+      bottom: 18px;
+      z-index: 3;
+      padding: 10px 13px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(15,15,24,0.68);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.45;
+      text-align: right;
+      box-shadow: 0 16px 44px rgba(0,0,0,0.32);
+    }
+
+    .login-version-badge strong {
+      display: block;
+      color: var(--text);
+      font-size: 12px;
+      letter-spacing: 0.04em;
+    }
+
+    @media (max-width: 720px) {
+      .login-version-badge {
+        right: 12px;
+        bottom: 10px;
+        max-width: calc(100% - 24px);
+      }
+    }
+
     .app-shell {
       width: min(1480px, calc(100% - 32px));
       margin: 0 auto;
@@ -691,6 +726,20 @@
 
     .toast.show { display: block; }
 
+
+    .system-error-box {
+      margin: 12px 0;
+      padding: 12px 14px;
+      border-radius: 16px;
+      border: 1px solid rgba(239,68,68,0.35);
+      background: rgba(239,68,68,0.10);
+      color: #fecaca;
+      font-size: 12px;
+      line-height: 1.45;
+      display: none;
+    }
+    .system-error-box.show { display: block; }
+
     .status-connection {
       display: inline-flex;
       align-items: center;
@@ -1053,6 +1102,10 @@
 </head>
 <body>
   <section class="login-screen" id="loginScreen">
+    <div class="login-version-badge">
+      <strong>Versão 1.4</strong>
+      <span>Sistema criado por David Moretti Ferreira.</span>
+    </div>
     <div class="login-card">
       <div class="login-logo">A</div>
       <h1>Alfa Serviços</h1>
@@ -1071,7 +1124,7 @@
       </form>
 
       <div class="login-helper">
-        O usuário principal deve ser criado no Firebase Authentication com o e-mail <strong>alfafiscalto@gmail.com</strong>. A senha não fica gravada no HTML por segurança.
+        O usuário principal deve ser criado no Firebase Authentication. E-mails administrativos: <strong>alfacontabilidade2014@gmail.com</strong> e <strong>alfafiscalto@gmail.com</strong>. A senha não fica gravada no HTML por segurança.
       </div>
     </div>
   </section>
@@ -1121,15 +1174,17 @@
           <p id="pageSubtitle">Selecione um funcionário e acompanhe os serviços solicitados pelo chefe.</p>
         </div>
         <div class="actions">
-          <button class="btn btn-secondary" id="allTasksBtn" type="button">Visão geral</button>
+          <button class="btn btn-secondary" id="allTasksBtn">Visão geral</button>
           <button class="btn btn-secondary" id="exportBackupBtn" type="button" style="display:none;">Exportar backup</button>
           <button class="btn btn-secondary" id="importBackupBtn" type="button" style="display:none;">Importar backup</button>
           <input type="file" id="importBackupInput" accept="application/json,.json" style="display:none;" />
           <button class="btn btn-secondary" id="resetPasswordBtn" type="button">Alterar senha</button>
-          <button class="btn btn-primary" id="openModalBtn" type="button">+ Novo serviço</button>
-          <button class="btn btn-ghost" id="logoutBtn" type="button">Sair</button>
+          <button class="btn btn-primary" id="openModalBtn">+ Novo serviço</button>
+          <button class="btn btn-ghost" id="logoutBtn">Sair</button>
         </div>
       </section>
+
+      <div id="systemErrorBox" class="system-error-box"></div>
 
       <section class="stats">
         <div class="stat-card">
@@ -1208,7 +1263,7 @@
             <h2>Clientes e empresas</h2>
             <p>Selecione clientes nos serviços e cadastre novos clientes sem precisar alterar o código.</p>
           </div>
-          <button class="btn btn-secondary" id="syncSeedClientsBtn" type="button" style="display:none;">Importar lista inicial</button>
+          <button class="btn btn-secondary" id="syncSeedClientsBtn" type="button">Importar lista inicial</button>
         </div>
 
         <div class="client-grid">
@@ -1415,7 +1470,628 @@
       "julyanarocha@unitins.br": { name: "Julyana", role: "Funcionária", employee: "Julyana" }
     };
 
-    const initialClients = [];
+    const initialClients = [
+      {
+            "alias": "ACADEMIA MEGA FIT",
+            "name": "ACADEMIA MEGA FIT LTDA",
+            "document": "38.303.484/0001-10"
+      },
+      {
+            "alias": "ACCCD",
+            "name": "ASSOCIACAO COMUNITARIA CULTURAL DE COMUNICACAO DE DIVINOPOLIS DO TOCANTINS - ACCCD",
+            "document": "51.406.476/0001-68"
+      },
+      {
+            "alias": "ADEDIV",
+            "name": "ADEDIV - ASSEMBLEIA DE DEUS DA DIVINOPOLIS - CIADSETA - CAMPO DIVINOPOLIS DO TOCANTINS",
+            "document": "28.900.134/0001-88"
+      },
+      {
+            "alias": "ADELVINO CARLOS DE S",
+            "name": "ADELVINO CARLOS DE SAUZA",
+            "document": "663.158.591/003-25"
+      },
+      {
+            "alias": "AEL",
+            "name": "ASSOCIACAO DOS EMPRESARIOS DE LAJEADO -TO - AEL",
+            "document": "61.451.665/0001-06"
+      },
+      {
+            "alias": "AGRO ANDRADE CASEARA",
+            "name": "LUIZ FERNANDO DE ANDRADE",
+            "document": "34.667.334/0002-16"
+      },
+      {
+            "alias": "AGRO COSTA PRODUTOS",
+            "name": "S R COSTA PRODUTOS AGROPECUARIOS",
+            "document": "65.868.075/0001-34"
+      },
+      {
+            "alias": "AGRO LOPES REPRESENT",
+            "name": "AGRO LOPES REPRESENTACAO LTDA",
+            "document": "52.826.136/0001-59"
+      },
+      {
+            "alias": "AGROP. DIVINOPOLIS",
+            "name": "ELCIO CASTRO CARVALHO EIRELI",
+            "document": "36.239.345/0001-40"
+      },
+      {
+            "alias": "AGROPECUÁRIA ANDRADE",
+            "name": "LUIZ FERNANDO DE ANDRADE - ME",
+            "document": "34.667.334/0001-35"
+      },
+      {
+            "alias": "ALFA CONTABILIDADE",
+            "name": "ALFA CONTABILIDADE E CONSULTORIA LTDA",
+            "document": "65.396.606/0001-33"
+      },
+      {
+            "alias": "ALFRA CONSTRUTORA",
+            "name": "ALFRA CONSTRUTORA LTDA",
+            "document": "41.451.186/0001-82"
+      },
+      {
+            "alias": "AMA FITNES",
+            "name": "AMA FITNESS ACADEMIA DE MUSCULACAO AVANCADA LTDA",
+            "document": "51.447.667/0001-78"
+      },
+      {
+            "alias": "AMBYENTE",
+            "name": "JADER FELIPE DE ALMEIDA BRITO LTDA",
+            "document": "35.297.107/0001-28"
+      },
+      {
+            "alias": "ARAGUAIA GAS",
+            "name": "JAWSON WALLACE MENEZES SANTOS",
+            "document": "25.247.435/0002-47"
+      },
+      {
+            "alias": "ARR BOTELHO EMPREEND",
+            "name": "ARR BOTELHO EMPREENDIMENTOS IMOBILIARIOS LTDA",
+            "document": "10.313.902/0001-31"
+      },
+      {
+            "alias": "ASSENT.  PALMERINHA",
+            "name": "ASSOCIACAO DOS PEQUENOS PRODUTORES RURAIS DO PROJETO DE ASSENTAMENTO PALMERINHA",
+            "document": "04.142.768/0001-50"
+      },
+      {
+            "alias": "ASSOC. C. LUZ E VIDA",
+            "name": "ASSOCIACAO COMUNITARIA LUZ E VIDA - ACLV",
+            "document": "03.130.294/0001-64"
+      },
+      {
+            "alias": "ASSOCIACAO RADIO LAG",
+            "name": "ASSOCIACAO RADIO COMUNITARIA CRIATIVA FM",
+            "document": "08.092.134/0001-91"
+      },
+      {
+            "alias": "ASSOCIACAO SÃO FELIX",
+            "name": "ASSOCIACAO COMERCIAL E EMPRESARIAL DE SAO FELIX DO TOCANTINS",
+            "document": "58.451.852/0001-85"
+      },
+      {
+            "alias": "ATF COLHEITAS",
+            "name": "A FERREIRA",
+            "document": "48.945.376/0001-03"
+      },
+      {
+            "alias": "AUTO MECANICA ALVES",
+            "name": "T F FEITOZA LTDA",
+            "document": "37.861.014/0001-00"
+      },
+      {
+            "alias": "AUTO MOLAS CAPELÃO",
+            "name": "BENTO DIEGO DA S COSTA LTDA",
+            "document": "48.153.979/0001-64"
+      },
+      {
+            "alias": "BARATÃO SUPERMERCADO",
+            "name": "29.524.989 ARNOU ARAUJO ROCHA",
+            "document": "29.524.989/0001-14"
+      },
+      {
+            "alias": "C J B DE BRITO E CIA",
+            "name": "C J B DE BRITO E CIA LTDA",
+            "document": "08.853.179/0001-31"
+      },
+      {
+            "alias": "CENTRAL DISTRIBUIDOR",
+            "name": "LUCAS DA SILVA ALVES EIRELI",
+            "document": "38.828.053/0001-78"
+      },
+      {
+            "alias": "CERAMICA DONA MARIA",
+            "name": "W GOMES WANDERLEY LTDA",
+            "document": "27.854.450/0001-06"
+      },
+      {
+            "alias": "CERAMICA PIEDADE",
+            "name": "HAMILTON EDSON ARAUJO",
+            "document": "42.013.389/0001-50"
+      },
+      {
+            "alias": "COM. COMPRE BEM",
+            "name": "REGES S CORDEIRO EIRELI",
+            "document": "43.107.220/0001-21"
+      },
+      {
+            "alias": "COMERCIAL BARBOSA",
+            "name": "BARBOSA & DIAS LTDA",
+            "document": "05.525.388/0001-68"
+      },
+      {
+            "alias": "COMERCIAL CUPIM",
+            "name": "J L P DE SOUZA",
+            "document": "10.922.807/0001-35"
+      },
+      {
+            "alias": "COMERCIAL SURUBIM",
+            "name": "CECILIO D S CARVALHO LTDA",
+            "document": "48.997.510/0001-01"
+      },
+      {
+            "alias": "CONNECTMAIS",
+            "name": "ROMARIO DA SILVA CABRAL EIRELI - ME",
+            "document": "27.502.083/0001-73"
+      },
+      {
+            "alias": "CONTRUTORA LD",
+            "name": "M D V COELHO LTDA",
+            "document": "47.857.688/0001-94"
+      },
+      {
+            "alias": "CONVENIENCIA LOPES",
+            "name": "CLAUDIO LOPES DO COUTO EIRELI",
+            "document": "31.844.140/0001-70"
+      },
+      {
+            "alias": "COOP. DOS GARIMPEIRO",
+            "name": "COOPERATIVA DOS GARIMPEIROS DO TOCANTINS",
+            "document": "36.669.397/0001-56"
+      },
+      {
+            "alias": "D’AGRO",
+            "name": "D’AGRO REPRESENTAÇÕES TECNOLOGIA AGRÍCOLA E SERVIÇOS LTDA",
+            "document": "57.955.714/0001-70"
+      },
+      {
+            "alias": "DCONEKTE",
+            "name": "DCONEKTE MULTIMIDIA LTDA",
+            "document": "15.097.886/0001-00"
+      },
+      {
+            "alias": "DCONEKTE FILIAL",
+            "name": "DCONEKTE MULTIMIDIA LTDA",
+            "document": "15.097.886/0002-91"
+      },
+      {
+            "alias": "DENES DECORAÇÕES",
+            "name": "V LIMA DE OLIVEIRA LTDA",
+            "document": "51.826.723/0001-85"
+      },
+      {
+            "alias": "DERMALASER",
+            "name": "ISNARA RIBEIRO FONTES LTDA",
+            "document": "39.669.723/0001-13"
+      },
+      {
+            "alias": "DIST. EN. AMIGOS",
+            "name": "JOSE DINO A ROSA",
+            "document": "32.603.725/0001-60"
+      },
+      {
+            "alias": "DISTRIBUID. PRECOBOM",
+            "name": "A MOREIRA DA SILVA LTDA",
+            "document": "57.826.783/0001-84"
+      },
+      {
+            "alias": "DK FABRICA DE DOCES",
+            "name": "K A COMERCIO E EMPREENDIMENTOS LTDA",
+            "document": "36.374.797/0001-34"
+      },
+      {
+            "alias": "EDIANE BRITO SHOWROO",
+            "name": "E FERREIRA BRITO LTDA",
+            "document": "51.501.129/0001-14"
+      },
+      {
+            "alias": "ELETRO LEO",
+            "name": "JOSE LEONARDO SIQUEIRA",
+            "document": "48.705.037/0001-41"
+      },
+      {
+            "alias": "ELETRO LIDER",
+            "name": "N MOREIRA DOS SANTOS",
+            "document": "45.321.347/0001-74"
+      },
+      {
+            "alias": "ELETROSILOS",
+            "name": "ELETROSILOS LTDA",
+            "document": "62.451.934/0001-05"
+      },
+      {
+            "alias": "EMPREITEIRA J F NOVA",
+            "name": "J FRANCISCO P S LTDA",
+            "document": "66.500.791/0001-27"
+      },
+      {
+            "alias": "EMPREITERA JOSE FRAN",
+            "name": "J FRANCISCO PEREIRA DA SILVA LTDA",
+            "document": "53.504.066/0001-85"
+      },
+      {
+            "alias": "ENGENORT",
+            "name": "ENGENORT CONSTRUTORA LTDA",
+            "document": "55.145.334/0001-45"
+      },
+      {
+            "alias": "EVOLUT ENGENHARIA",
+            "name": "EVOLUT ENGENHARIA LTDA",
+            "document": "65.845.357/0001-16"
+      },
+      {
+            "alias": "FABIO COLHEITAS",
+            "name": "27.096.961 FABIO OLIVEIRA FERREIRA",
+            "document": "27.096.961/0001-06"
+      },
+      {
+            "alias": "FAZ. VALE DA PROMESS",
+            "name": "FAZENDA VALE DA PROMESSA",
+            "document": "008.078.401/001-26"
+      },
+      {
+            "alias": "FAZENDA BOA VISTA",
+            "name": "WAINER GOMES WANDERLEY",
+            "document": "158.925.731/001-18"
+      },
+      {
+            "alias": "FAZENDA BURITI",
+            "name": "DIVINO EUGENIO DOS SANTOS",
+            "document": "382.064.201/001-67"
+      },
+      {
+            "alias": "FAZENDA NOVO HORIZON",
+            "name": "LUIZ ANTONIO MIRANDA",
+            "document": "328.421.639/001-21"
+      },
+      {
+            "alias": "FAZENDA SÃO JOSE",
+            "name": "ADARCIRI GONCALVES MOREIRA",
+            "document": "044.916.291/001-08"
+      },
+      {
+            "alias": "FP PRODUCOES",
+            "name": "F S FERREIRA LTDA",
+            "document": "21.072.243/0001-05"
+      },
+      {
+            "alias": "GAS SUPER 10",
+            "name": "JAWSON WALLACE MENEZES SANTOS",
+            "document": "25.247.435/0001-66"
+      },
+      {
+            "alias": "GS SOLUCOES E EVENTO",
+            "name": "GS LOCAÇÕES LTDA",
+            "document": "14.841.840/0001-91"
+      },
+      {
+            "alias": "HL PISCINAS",
+            "name": "ADELVINO CARLOS DE SOUZA",
+            "document": "42.308.433/0001-59"
+      },
+      {
+            "alias": "HL PISCINAS FILIAL",
+            "name": "A C DE SOUZA LTDA",
+            "document": "42.308.433/0002-30"
+      },
+      {
+            "alias": "HOTEL GOIANO",
+            "name": "E C DOS SANTOS FERREIRA",
+            "document": "36.253.262/0001-05"
+      },
+      {
+            "alias": "IGREJA CRISTO E VIDA",
+            "name": "IGREJA ASSEMBLEIA DE DEUS MINISTERIO CRISTO E VIDA",
+            "document": "37.128.627/0001-32"
+      },
+      {
+            "alias": "IGREJA EXERCITO DE D",
+            "name": "IGREJA PENTECOSTAL EXERCITO DE DEUS",
+            "document": "24.757.013/0001-78"
+      },
+      {
+            "alias": "IGREJA METANOIA",
+            "name": "IGREJA ASSEMBLEIA DE DEUS PROJETO METANOIA MISSOES SEM FRONTEIRAS - IADPMF",
+            "document": "31.540.112/0001-69"
+      },
+      {
+            "alias": "IGREJA RENASCER",
+            "name": "IGREJA ASSEMBLEIA DE DEUS RENASCER - IADR",
+            "document": "48.340.804/0001-66"
+      },
+      {
+            "alias": "IMOB FAZENDAS TOCANT",
+            "name": "G R PEREIRA LTDA",
+            "document": "44.041.372/0001-31"
+      },
+      {
+            "alias": "J CARDOSO DE SA",
+            "name": "J CARDOSO DE SA LTDA",
+            "document": "18.342.525/0001-70"
+      },
+      {
+            "alias": "JC INFORMATICA",
+            "name": "I D LIMA LTDA",
+            "document": "42.232.921/0001-20"
+      },
+      {
+            "alias": "JH EMPREENDIMENTOS",
+            "name": "JOSE HENRIQUE DE ALMEIDA BRITO",
+            "document": "24.579.102/0001-71"
+      },
+      {
+            "alias": "JK SERVICOS DE CONST",
+            "name": "JK SERVICOS DE CONSTRUTORA LTDA",
+            "document": "26.890.071/0001-09"
+      },
+      {
+            "alias": "JSC MATERIAS",
+            "name": "JOSE CARLOS SILVA LOBO EIRELI",
+            "document": "32.482.346/0001-60"
+      },
+      {
+            "alias": "KYNAR COMUNICACAO",
+            "name": "KYNAR COMUNICACAO VISUAL LTDA",
+            "document": "48.761.179/0001-26"
+      },
+      {
+            "alias": "LIMIAR",
+            "name": "PAULO ANTONIO DA SILVA",
+            "document": "41.544.293/0001-55"
+      },
+      {
+            "alias": "LIMPISCINAS",
+            "name": "EDIMILSON LOPES DA CRUZ",
+            "document": "01.129.611/0001-05"
+      },
+      {
+            "alias": "LUIZ CLAUDIO",
+            "name": "LUIZ CLAUDIO REZENDE DE AZEVEDO",
+            "document": "35.934.583/0001-02"
+      },
+      {
+            "alias": "M G DE SOUZA LTDA",
+            "name": "M G DE SOUZA LTDA",
+            "document": "48.581.887/0001-85"
+      },
+      {
+            "alias": "M. O. MUNCK E TRANSP",
+            "name": "M.O.M. DA ROSA",
+            "document": "15.740.818/0001-18"
+      },
+      {
+            "alias": "MANAS VARIEDADES",
+            "name": "IRACELIA AIRES WANDERLEY 03469564124",
+            "document": "42.253.854/0001-20"
+      },
+      {
+            "alias": "MARCOS CARVALHO",
+            "name": "MARCOS CARVALHO MARIANO",
+            "document": "005.366.111/001-14"
+      },
+      {
+            "alias": "MARI K AVIAMENT",
+            "name": "MARI K AVIAMENTOS LTDA",
+            "document": "55.061.621/0001-77"
+      },
+      {
+            "alias": "MAT TONHÃO",
+            "name": "A BOMFIM DA SILVA RODRIGUES LTDA",
+            "document": "47.598.506/0001-08"
+      },
+      {
+            "alias": "MAYCON DIAGNOSTICO",
+            "name": "MAYCON DIAGNOSTICO LTDA",
+            "document": "61.110.586/0001-31"
+      },
+      {
+            "alias": "MERCEARIA ZORO",
+            "name": "Z MENDES DE CARVALHO LTDA",
+            "document": "60.299.566/0001-98"
+      },
+      {
+            "alias": "MINEBR NATIVIDADE",
+            "name": "MINEBR NATIVIDADE LTDA",
+            "document": "46.593.966/0001-80"
+      },
+      {
+            "alias": "MUNDIAL PNEUS",
+            "name": "VALTER RODRIGUES OLIVEIRA - ME",
+            "document": "27.905.815/0001-76"
+      },
+      {
+            "alias": "NETO",
+            "name": "ANTONIO ALVES DE ALMEIDA NETO",
+            "document": "26.941.466/0001-85"
+      },
+      {
+            "alias": "NOGUEIRA ELETRICA",
+            "name": "NOGUEIRA CONSTRUCOES E INFRAESTRUTURA LTDA",
+            "document": "33.685.328/0001-48"
+      },
+      {
+            "alias": "NORTE & NORDESTE",
+            "name": "NORTE & NORDESTE MINERIOS DO BRASIL LTDA",
+            "document": "57.296.867/0001-53"
+      },
+      {
+            "alias": "NORTE NAPAS",
+            "name": "C P DE ARAUJO LTDA",
+            "document": "43.677.280/0001-80"
+      },
+      {
+            "alias": "NUTRI MAIS",
+            "name": "RESTAURANTE E LANCHONETE NUTRI MAIS LTDA",
+            "document": "49.931.842/0001-56"
+      },
+      {
+            "alias": "OTICA ALTO OLHAR PSO",
+            "name": "L S FERREIRA LTDA",
+            "document": "18.409.866/0003-88"
+      },
+      {
+            "alias": "OTICA NOVO OLHAR",
+            "name": "L S FERREIRA LTDA",
+            "document": "18.409.866/0001-16"
+      },
+      {
+            "alias": "OTICA NOVO OLHAR DIV",
+            "name": "L S FERREIRA LTDA",
+            "document": "18.409.866/0002-05"
+      },
+      {
+            "alias": "OTICAS ALTO OLHAR",
+            "name": "41.514.982 JOAO OLIVEIRA DE ALENCAR",
+            "document": "41.514.982/0001-17"
+      },
+      {
+            "alias": "OTICAS SANTANA",
+            "name": "49.057.074 HEITOR SOARES FERREIRA",
+            "document": "49.057.074/0001-53"
+      },
+      {
+            "alias": "PANIFICADORA TOCANTI",
+            "name": "PAULO ALVES DOS SANTOS",
+            "document": "33.090.554/0001-86"
+      },
+      {
+            "alias": "PÃO IMPERIO PANIFICA",
+            "name": "S DE OLIVEIRA SOUZA LTDA",
+            "document": "34.466.799/0001-28"
+      },
+      {
+            "alias": "PEDRA BRANCA",
+            "name": "PEDRA BRANCA MATERIAL DE CONSTRUCAO LTDA",
+            "document": "24.776.447/0001-15"
+      },
+      {
+            "alias": "POLO AGRO",
+            "name": "POLO DEFENSIVOS AGRICOLAS E FERRAGISTA LTDA",
+            "document": "34.104.358/0001-86"
+      },
+      {
+            "alias": "PONTO DA PACOCA",
+            "name": "MARCELO FARIAS DE OLIVEIRA 24150967253",
+            "document": "26.634.305/0001-49"
+      },
+      {
+            "alias": "POSTO DE MEDICAMENTO",
+            "name": "F TAVARES PEREIRA LTDA",
+            "document": "56.900.670/0001-19"
+      },
+      {
+            "alias": "POUSADA POR DO SOL",
+            "name": "POUSADA POR DO SOL LTDA",
+            "document": "59.794.076/0001-89"
+      },
+      {
+            "alias": "R. L. REPRESENTACOES",
+            "name": "R. L. REPRESENTACOES COMERCIAIS LTDA",
+            "document": "27.403.058/0001-32"
+      },
+      {
+            "alias": "RIBRAX",
+            "name": "S R DE ABREU LTDA",
+            "document": "21.359.066/0001-42"
+      },
+      {
+            "alias": "RMB PROJETOS E CONSU",
+            "name": "RMB PROJETOS E CONSULTORIA LTDA",
+            "document": "20.476.712/0001-99"
+      },
+      {
+            "alias": "RODRIGUES BARBEARIA",
+            "name": "RODRIGUES BARBEARIA LTDA",
+            "document": "43.606.750/0001-14"
+      },
+      {
+            "alias": "S R MARIANOPOLIS F1",
+            "name": "S R DE ABREU LTDA",
+            "document": "21.359.066/0002-23"
+      },
+      {
+            "alias": "SANTA CLARA C DOS SA",
+            "name": "C DOS SANTOS CARVALHO",
+            "document": "29.860.447/0001-12"
+      },
+      {
+            "alias": "SANTA CLARA NETO",
+            "name": "SANTA CLARA SERVICOS E LOCACOES LTDA",
+            "document": "55.804.658/0001-48"
+      },
+      {
+            "alias": "SÃO PEDRO EMPREENDIM",
+            "name": "LL WANDERLEY - ME",
+            "document": "35.230.650/0001-08"
+      },
+      {
+            "alias": "SINDICATO TRAB. DIV.",
+            "name": "SINDICATO DOS TRABALHADORES E TRABALHADORAS RURAIS AGRICULTORES E AGRICULTORAS FAMILIARES DE DIVINOPOLIS DO TOCANTINS - TO",
+            "document": "24.852.063/0001-34"
+      },
+      {
+            "alias": "SONHO DE CRIANÇA",
+            "name": "M V A SANTOS LTDA",
+            "document": "08.332.823/0001-26"
+      },
+      {
+            "alias": "SOS BORRACHARIA",
+            "name": "JOSE PEREIRA DA SILVA",
+            "document": "13.994.861/0001-84"
+      },
+      {
+            "alias": "TIAGO MIGUEL SILVANI",
+            "name": "TIAGO MIGUEL SILVANI",
+            "document": "100.130.216/002-20"
+      },
+      {
+            "alias": "TORNEADORA ALADIM",
+            "name": "DERGILIO GOMES DA SILVA - ME",
+            "document": "24.201.900/0001-65"
+      },
+      {
+            "alias": "VESTY FASHION",
+            "name": "IRAILDE AIRES WANDERLEY",
+            "document": "15.152.303/0001-05"
+      },
+      {
+            "alias": "VIVEIRO JARDIM PARIS",
+            "name": "RAIMUNDO F DA SILVA LTDA",
+            "document": "22.850.794/0001-15"
+      },
+      {
+            "alias": "WSC CONSTRUTORA",
+            "name": "WSC CONSTUTORA LTDA",
+            "document": "64.470.327/0001-00"
+      },
+      {
+            "alias": "WSC ENGENHARIA",
+            "name": "WSC ENGENHARIA GEOLOGIA SERVICOS AMBIENTAIS E REPRESENTACOES LTDA",
+            "document": "48.168.684/0001-61"
+      },
+      {
+            "alias": "WSC MINERACAO & MEIO",
+            "name": "WSC MINERACAO & MEIO AMBIENTE LTDA",
+            "document": "59.090.155/0001-09"
+      },
+      {
+            "alias": "Y O WATANABE",
+            "name": "Y O WATANABE LTDA",
+            "document": "64.137.551/0001-84"
+      }
+];
 
     function normalizeEmail(email) {
       return String(email || "").trim().toLowerCase();
@@ -1425,27 +2101,25 @@
       return allowedUserEmails.includes(normalizeEmail(email));
     }
 
+    function isAdminUser() {
+      return currentUserProfile?.role === "Administrador";
+    }
+
+    function currentEmployeeName() {
+      return currentUserProfile?.employee || null;
+    }
+
     /*
       CONFIGURAÇÃO NECESSÁRIA NO FIREBASE
 
       1) Firebase Console > Authentication > Sign-in method > habilite Email/Password.
       2) Authentication > Users > Add user:
-         E-mail: alfafiscalto@gmail.com
+         E-mails administrativos: alfacontabilidade2014@gmail.com e alfafiscalto@gmail.com
          Senha: defina a senha principal informada pelo escritório.
       3) Firestore Database > Create database.
-      4) Regras recomendadas para liberar somente usuário logado:
-
-      rules_version = '2';
-      service cloud.firestore {
-        match /databases/{database}/documents {
-          match /tarefas/{document=**} {
-            allow read, write: if request.auth != null
-              && request.auth.token.email == 'alfafiscalto@gmail.com';
-          }
-        }
-      }
-
-      5) Copie as credenciais do app Web e substitua o objeto firebaseConfig abaixo.
+      4) Regras recomendadas: liberar somente usuários autorizados listados no sistema.
+         Cole as regras atualizadas informadas junto com este arquivo no Firestore.
+      5) Copie as credenciais do app Web e substitua o objeto firebaseConfig abaixo somente se trocar o projeto Firebase.
     */
     const firebaseConfig = {
       apiKey: "AIzaSyCMLD4nzWvBzL7WHbQnGVl2a3sFmC7WmsY",
@@ -1530,6 +2204,34 @@
       connectionText.textContent = message;
     }
 
+    function showSystemError(message) {
+      const box = document.getElementById("systemErrorBox");
+      if (!box) return;
+      box.textContent = message;
+      box.classList.add("show");
+    }
+
+    function clearSystemError() {
+      const box = document.getElementById("systemErrorBox");
+      if (!box) return;
+      box.textContent = "";
+      box.classList.remove("show");
+    }
+
+    function explainFirestoreError(error) {
+      const code = error?.code || "";
+      if (code === "permission-denied") {
+        return "Firestore bloqueou a leitura. Publique as regras do Firestore com o e-mail logado autorizado. O botão Novo serviço continua disponível, mas salvar também depende dessas regras.";
+      }
+      if (code === "unavailable") {
+        return "Firestore indisponível no momento ou internet instável. Tente atualizar a página.";
+      }
+      if (code === "failed-precondition") {
+        return "Firestore pediu índice/condição de consulta. Esta versão usa leitura simples; atualize com Ctrl + F5.";
+      }
+      return `Erro ao carregar dados do Firestore${code ? ` (${code})` : ""}. Confira regras do Firestore, login e conexão.`;
+    }
+
 
 
     function clientLabel(client) {
@@ -1611,7 +2313,24 @@
     }
 
     async function syncSeedClients() {
-      showToast("A lista fixa foi removida do HTML. Para carregar clientes no Firestore, use o botão Importar backup com o arquivo JSON de clientes.");
+      if (!firebaseReady || !currentUser) {
+        showToast("Faça login antes de importar clientes.");
+        return;
+      }
+      const confirmSync = confirm(`Importar ${initialClients.length} clientes da planilha para o Firestore? Faça isso apenas uma vez.`);
+      if (!confirmSync) return;
+      let count = 0;
+      for (const client of initialClients) {
+        await addDoc(collection(db, "clientes"), {
+          ...client,
+          createdAt: serverTimestamp(),
+          createdBy: currentUser.email,
+          source: "planilha",
+          active: true
+        });
+        count += 1;
+      }
+      showToast(`${count} clientes enviados para o Firestore.`);
     }
 
     function setView(view) {
@@ -1684,6 +2403,19 @@
       URL.revokeObjectURL(url);
     }
 
+    async function handlePasswordReset() {
+      if (!auth || !currentUser?.email) {
+        showToast("Faça login para solicitar alteração de senha.");
+        return;
+      }
+      try {
+        await sendPasswordResetEmail(auth, currentUser.email);
+        showToast("Enviamos um link de redefinição de senha para seu e-mail.");
+      } catch (error) {
+        console.error(error);
+        showToast("Não foi possível enviar o link de senha. Confira o Authentication no Firebase.");
+      }
+    }
 
     function exportBackupJson() {
       if (!isAdminUser()) {
@@ -1694,10 +2426,10 @@
       const timestamp = now.toISOString();
       const backup = {
         sistema: "Alfa Contabilidade - Sistema de Serviços",
-        versao: "1.5",
+        versao: "1.4",
         exportadoEm: timestamp,
         exportadoPor: currentUser?.email || null,
-        observacao: "Backup manual gerado pelo navegador. Use o botão Importar backup para restaurar tarefas e clientes.",
+        observacao: "Backup manual gerado pelo navegador. Para backup automático real, use Firebase/Google Cloud com Cloud Functions ou Cloud Scheduler.",
         totalTarefas: tasks.length,
         totalClientes: clients.length,
         tarefas: tasks,
@@ -1717,6 +2449,7 @@
       showToast("Backup exportado em JSON com tarefas e clientes.");
     }
 
+
     function normalizeBackupTimestamp(value) {
       if (!value) return null;
       if (value?.toMillis) return value;
@@ -1733,7 +2466,8 @@
     function cleanBackupRecord(record, fallbackUserEmail) {
       const cleaned = { ...record };
       delete cleaned.id;
-      ["createdAt", "updatedAt", "restoredAt"].forEach(field => {
+      delete cleaned.source;
+      ["createdAt", "updatedAt"].forEach(field => {
         const normalized = normalizeBackupTimestamp(cleaned[field]);
         if (normalized) cleaned[field] = normalized;
         else if (field in cleaned) delete cleaned[field];
@@ -1750,9 +2484,10 @@
       }
       if (!file) return;
 
+      const text = await file.text();
       let backup;
       try {
-        backup = JSON.parse(await file.text());
+        backup = JSON.parse(text);
       } catch (error) {
         showToast("Arquivo inválido. Selecione um backup JSON exportado pelo sistema.");
         return;
@@ -1774,13 +2509,11 @@
           if (item.id) await setDoc(doc(db, "tarefas", item.id), cleaned, { merge: true });
           else await addDoc(collection(db, "tarefas"), cleaned);
         }
-
         for (const item of backupClients) {
           const cleaned = cleanBackupRecord(item, currentUser?.email);
           if (item.id) await setDoc(doc(db, "clientes", item.id), cleaned, { merge: true });
           else await addDoc(collection(db, "clientes"), cleaned);
         }
-
         showToast("Backup importado com sucesso.");
       } catch (error) {
         console.error(error);
@@ -1918,7 +2651,8 @@
       document.getElementById("countAndamento").textContent = andamento;
       document.getElementById("countConcluido").textContent = concluido;
 
-      document.getElementById("count-todos").textContent = tasks.length;
+      const countTodosEl = document.getElementById("count-todos");
+      if (countTodosEl) countTodosEl.textContent = tasks.length;
       employees.forEach(employee => {
         const el = document.getElementById(`count-${employee.name}`);
         if (el) el.textContent = tasks.filter(task => task.employee === employee.name && task.status !== "concluido").length;
@@ -2014,7 +2748,9 @@
       modalTitle.textContent = task ? "Editar serviço" : "Novo serviço";
       document.getElementById("taskId").value = task?.id || "";
       const defaultEmployee = currentUserProfile?.employee || employees[0].name;
-      employeeInput.value = task?.employee || (selectedEmployee === "todos" ? defaultEmployee : selectedEmployee);
+      employeeInput.value = currentEmployeeName() || task?.employee || (selectedEmployee === "todos" ? defaultEmployee : selectedEmployee);
+      if (isAdminUser()) employeeInput.value = task?.employee || (selectedEmployee === "todos" ? defaultEmployee : selectedEmployee);
+      employeeInput.disabled = false;
       document.getElementById("requestDateInput").value = task?.requestDate || todayISO();
       document.getElementById("deadlineInput").value = task?.deadline || todayISO();
       document.getElementById("clientInput").value = task ? clientLabel({ alias: task.clientAlias, name: task.clientName, document: task.clientDocument }) : "";
@@ -2046,7 +2782,7 @@
 
 
 
-
+    
 
     async function saveTask(event) {
       event.preventDefault();
@@ -2101,7 +2837,8 @@
           await updateDoc(doc(db, "tarefas", editingTaskId), payload);
           showToast("Serviço atualizado com sucesso.");
         } else {
-          await addDoc(collection(db, "tarefas"), {
+          const newDocRef = doc(collection(db, "tarefas"));
+          await setDoc(newDocRef, {
             ...payload,
             createdAt: serverTimestamp(),
             createdBy: currentUser.email
@@ -2211,13 +2948,15 @@
       currentUserEmail.textContent = "-";
       appShell.classList.remove("visible");
       loginScreen.style.display = "grid";
-      document.getElementById("allTasksBtn").style.display = "inline-flex";
-      document.getElementById("exportBackupBtn").style.display = "none";
-      document.getElementById("importBackupBtn").style.display = "none";
       if (unsubscribe) unsubscribe();
       if (unsubscribeClients) unsubscribeClients();
       tasks = [];
       clients = initialClients.map(client => ({ ...client, source: "planilha" }));
+      selectedEmployee = "todos";
+      buildEmployees();
+      document.getElementById("allTasksBtn").style.display = "inline-flex";
+      document.getElementById("exportBackupBtn").style.display = "none";
+      document.getElementById("importBackupBtn").style.display = "none";
       render();
       renderClients();
     }
@@ -2232,13 +2971,11 @@
             const bTime = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
             return bTime - aTime;
           });
-        setConnection("online", "Conectado ao Firebase");
         render();
       }, (error) => {
         console.error(error);
         setConnection("offline", "Erro ao carregar dados");
-        const code = error?.code ? ` (${error.code})` : "";
-        showToast(`Erro ao carregar tarefas${code}. Confira principalmente as regras do Firestore e se o e-mail logado está autorizado.`);
+        showToast("Erro ao ouvir o Firestore. Verifique as regras do banco de dados e os e-mails autorizados.");
       });
     }
 
@@ -2253,7 +2990,7 @@
         buildClientDatalist();
       }, (error) => {
         console.error(error);
-        showToast("Não foi possível carregar a lista de clientes do Firestore.");
+        showToast(`Não foi possível carregar clientes${error?.code ? ` (${error.code})` : ""}. O cadastro de serviço continua disponível.`);
         clients = getMergedClients([]);
         renderClients();
       });
@@ -2307,7 +3044,9 @@
       await importBackupJsonFile(event.target.files?.[0]);
       event.target.value = "";
     });
-    document.getElementById("openModalBtn").addEventListener("click", () => openModal());
+    document.getElementById("openModalBtn").addEventListener("click", () => {
+      try { openModal(); } catch (error) { console.error(error); showToast("Erro ao abrir Novo serviço. Use Ctrl + F5 e tente novamente."); }
+    });
     document.getElementById("closeModalBtn").addEventListener("click", closeModal);
     document.getElementById("cancelBtn").addEventListener("click", closeModal);
     document.getElementById("allTasksBtn").addEventListener("click", () => {
