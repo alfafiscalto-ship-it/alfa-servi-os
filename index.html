@@ -726,6 +726,20 @@
 
     .toast.show { display: block; }
 
+
+    .system-error-box {
+      margin: 12px 0;
+      padding: 12px 14px;
+      border-radius: 16px;
+      border: 1px solid rgba(239,68,68,0.35);
+      background: rgba(239,68,68,0.10);
+      color: #fecaca;
+      font-size: 12px;
+      line-height: 1.45;
+      display: none;
+    }
+    .system-error-box.show { display: block; }
+
     .status-connection {
       display: inline-flex;
       align-items: center;
@@ -1084,16 +1098,6 @@
       }
     }
 
-  
-
-    /* Correção de clique: garante que a barra superior e o botão Novo serviço fiquem clicáveis */
-    .topbar, .actions, #openModalBtn {
-      position: relative;
-      z-index: 20;
-      pointer-events: auto;
-    }
-    .modal { z-index: 9999; }
-
   </style>
 </head>
 <body>
@@ -1170,13 +1174,15 @@
           <p id="pageSubtitle">Selecione um funcionário e acompanhe os serviços solicitados pelo chefe.</p>
         </div>
         <div class="actions">
-          <button class="btn btn-secondary" id="allTasksBtn" type="button">Visão geral</button>
+          <button class="btn btn-secondary" id="allTasksBtn">Visão geral</button>
           <button class="btn btn-secondary" id="exportBackupBtn" type="button" style="display:none;">Exportar backup</button>
           <button class="btn btn-secondary" id="resetPasswordBtn" type="button">Alterar senha</button>
-          <button class="btn btn-primary" id="openModalBtn" type="button" onclick="window.forceOpenModal && window.forceOpenModal()">+ Novo serviço</button>
-          <button class="btn btn-ghost" id="logoutBtn" type="button">Sair</button>
+          <button class="btn btn-primary" id="openModalBtn">+ Novo serviço</button>
+          <button class="btn btn-ghost" id="logoutBtn">Sair</button>
         </div>
       </section>
+
+      <div id="systemErrorBox" class="system-error-box"></div>
 
       <section class="stats">
         <div class="stat-card">
@@ -1438,7 +1444,7 @@
     import {
       getStorage,
       ref as storageRef,
-      uploadBytes,
+      uploadBytesResumable,
       getDownloadURL
     } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js";
 
@@ -2201,12 +2207,40 @@
     function showToast(message) {
       toast.textContent = message;
       toast.classList.add("show");
-      setTimeout(() => toast.classList.remove("show"), 7000);
+      setTimeout(() => toast.classList.remove("show"), 3900);
     }
 
     function setConnection(status, message) {
       connectionPulse.className = `pulse ${status}`;
       connectionText.textContent = message;
+    }
+
+    function showSystemError(message) {
+      const box = document.getElementById("systemErrorBox");
+      if (!box) return;
+      box.textContent = message;
+      box.classList.add("show");
+    }
+
+    function clearSystemError() {
+      const box = document.getElementById("systemErrorBox");
+      if (!box) return;
+      box.textContent = "";
+      box.classList.remove("show");
+    }
+
+    function explainFirestoreError(error) {
+      const code = error?.code || "";
+      if (code === "permission-denied") {
+        return "Firestore bloqueou a leitura. Publique as regras do Firestore com o e-mail logado autorizado. O botão Novo serviço continua disponível, mas salvar também depende dessas regras.";
+      }
+      if (code === "unavailable") {
+        return "Firestore indisponível no momento ou internet instável. Tente atualizar a página.";
+      }
+      if (code === "failed-precondition") {
+        return "Firestore pediu índice/condição de consulta. Esta versão usa leitura simples; atualize com Ctrl + F5.";
+      }
+      return `Erro ao carregar dados do Firestore${code ? ` (${code})` : ""}. Confira regras do Firestore, login e conexão.`;
     }
 
 
@@ -2445,7 +2479,7 @@
 
       const admin = isAdminUser() || !currentUserProfile;
       const ownEmployee = currentEmployeeName();
-      const visibleEmployees = employees;
+      const visibleEmployees = admin ? employees : employees.filter(employee => employee.name === ownEmployee);
 
       if (admin) {
         const allBtn = document.createElement("button");
@@ -2491,7 +2525,7 @@
       selectedEmployee = admin ? (selectedEmployee || "todos") : ownEmployee;
       if (!selectedEmployee || (!admin && selectedEmployee !== ownEmployee)) selectedEmployee = admin ? "todos" : ownEmployee;
 
-      employeeInput.disabled = false;
+      employeeInput.disabled = !admin;
       if (reportEmployeeInput) {
         reportEmployeeInput.disabled = !admin;
         reportEmployeeInput.value = admin ? (reportEmployeeInput.value || "todos") : ownEmployee;
@@ -2658,13 +2692,13 @@
     }
 
     function openModal(task = null) {
-      if (!employeeInput.options.length) buildEmployees();
       editingTaskId = task?.id || null;
       modalTitle.textContent = task ? "Editar serviço" : "Novo serviço";
       document.getElementById("taskId").value = task?.id || "";
-      const defaultEmployee = currentEmployeeName() || employees[0].name;
-      employeeInput.value = task?.employee || (selectedEmployee !== "todos" ? selectedEmployee : defaultEmployee);
-      employeeInput.disabled = false;
+      const defaultEmployee = currentUserProfile?.employee || employees[0].name;
+      employeeInput.value = currentEmployeeName() || task?.employee || (selectedEmployee === "todos" ? defaultEmployee : selectedEmployee);
+      if (isAdminUser()) employeeInput.value = task?.employee || (selectedEmployee === "todos" ? defaultEmployee : selectedEmployee);
+      employeeInput.disabled = !isAdminUser();
       document.getElementById("requestDateInput").value = task?.requestDate || todayISO();
       document.getElementById("deadlineInput").value = task?.deadline || todayISO();
       document.getElementById("clientInput").value = task ? clientLabel({ alias: task.clientAlias, name: task.clientName, document: task.clientDocument }) : "";
@@ -2687,16 +2721,6 @@
       taskForm.reset();
       editingTaskId = null;
     }
-
-
-    window.forceOpenModal = function() {
-      try {
-        openModal();
-      } catch (error) {
-        console.error("Erro ao abrir Novo serviço:", error);
-        alert("Não foi possível abrir a janela de Novo serviço. Atualize a página com Ctrl + F5 e tente novamente.");
-      }
-    };
 
     function getNextStatus(status) {
       if (status === "pendente") return "andamento";
@@ -2721,47 +2745,87 @@
       return cleanName || `arquivo-${Date.now()}`;
     }
 
+    function uniqueId() {
+      if (window.crypto && typeof window.crypto.randomUUID === "function") {
+        return window.crypto.randomUUID();
+      }
+      return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    }
+
     function explainFirebaseUploadError(error) {
       const code = error?.code || "";
       if (code.includes("storage/unauthorized")) {
-        return "O serviço foi bloqueado pelas regras do Firebase Storage. Atualize as regras do Storage com os e-mails autorizados.";
+        return "O anexo foi bloqueado pelas regras do Firebase Storage. Publique as regras do Storage com os e-mails autorizados.";
+      }
+      if (code.includes("storage/unauthenticated")) {
+        return "O Firebase Storage não reconheceu o login. Saia, entre novamente e tente anexar de novo.";
       }
       if (code.includes("storage/bucket-not-found")) {
-        return "O bucket do Firebase Storage não foi encontrado. Confira se o Storage está ativado e se o storageBucket do firebaseConfig está correto.";
+        return "O bucket do Firebase Storage não foi encontrado. Confira se o Storage está ativado no Firebase.";
       }
-      if (code.includes("storage/object-not-found")) {
-        return "O arquivo foi enviado, mas a URL não foi localizada no Storage. Confira o bucket e tente novamente.";
-      }
-      if (code.includes("storage/canceled")) {
-        return "O envio do anexo foi cancelado antes de terminar.";
+      if (code.includes("storage/retry-limit-exceeded")) {
+        return "O envio demorou demais e o Firebase interrompeu a tentativa. Tente novamente com internet estável ou arquivo menor.";
       }
       if (code.includes("storage/quota-exceeded")) {
         return "A cota do Firebase Storage foi excedida. Verifique o plano/cota no Firebase.";
       }
+      if (code.includes("storage/canceled")) {
+        return "O envio do anexo foi cancelado antes de terminar.";
+      }
       return `Falha ao anexar arquivo: ${error?.message || "erro desconhecido no Firebase Storage"}`;
     }
 
-    async function uploadTaskAttachments(taskId, files = getSelectedAttachmentFiles()) {
+    function uploadFileWithProgress(fileRef, file, metadata, onProgress) {
+      return new Promise((resolve, reject) => {
+        const uploadTask = uploadBytesResumable(fileRef, file, metadata);
+        const timeout = window.setTimeout(() => {
+          try { uploadTask.cancel(); } catch (_) {}
+          reject(new Error("O envio do anexo passou de 3 minutos e foi interrompido. Teste com arquivo menor e confira o Firebase Storage."));
+        }, 180000);
+
+        uploadTask.on("state_changed",
+          (snapshot) => {
+            const percent = snapshot.totalBytes ? Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100) : 0;
+            if (onProgress) onProgress(percent);
+          },
+          (error) => {
+            window.clearTimeout(timeout);
+            reject(error);
+          },
+          () => {
+            window.clearTimeout(timeout);
+            resolve(uploadTask.snapshot);
+          }
+        );
+      });
+    }
+
+    async function uploadTaskAttachments(taskId, files = getSelectedAttachmentFiles(), submitButton = null) {
       if (!files.length) return [];
       if (!storage) throw new Error("Storage não configurado.");
       if (!currentUser?.email) throw new Error("Usuário não identificado para enviar anexos.");
 
       const uploaded = [];
-      for (const file of files) {
+      for (let index = 0; index < files.length; index += 1) {
+        const file = files[index];
         const safeName = makeSafeFileName(file.name);
-        const uniqueName = `${Date.now()}-${crypto.randomUUID()}-${safeName}`;
+        const uniqueName = `${Date.now()}-${uniqueId()}-${safeName}`;
         const path = `tarefas/${taskId}/${uniqueName}`;
         const fileRef = storageRef(storage, path);
 
         try {
-          await uploadBytes(fileRef, file, {
+          if (submitButton) submitButton.textContent = `Enviando anexo ${index + 1}/${files.length}...`;
+          await uploadFileWithProgress(fileRef, file, {
             contentType: file.type || "application/octet-stream",
             customMetadata: {
               uploadedBy: currentUser.email,
               originalName: file.name,
               taskId
             }
+          }, (percent) => {
+            if (submitButton) submitButton.textContent = `Enviando anexo ${index + 1}/${files.length}... ${percent}%`;
           });
+
           const url = await getDownloadURL(fileRef);
           uploaded.push({
             name: file.name,
@@ -2785,7 +2849,7 @@
 
       const selectedClient = parseClientInput(document.getElementById("clientInput").value);
       const payload = {
-        employee: employeeInput.value,
+        employee: isAdminUser() ? employeeInput.value : currentEmployeeName(),
         clientAlias: selectedClient.alias,
         clientName: selectedClient.name,
         clientDocument: selectedClient.document,
@@ -2799,11 +2863,6 @@
         updatedAt: serverTimestamp(),
         updatedBy: currentUser?.email || null
       };
-
-      if (!payload.employee) {
-        showToast("Selecione o funcionário responsável pelo serviço.");
-        return;
-      }
 
       if (!payload.serviceType) {
         showToast("Informe o tipo de serviço antes de salvar.");
@@ -2837,7 +2896,7 @@
 
         if (editingTaskId) {
           const previousTask = tasks.find(item => item.id === editingTaskId);
-          const newAttachments = await uploadTaskAttachments(editingTaskId, selectedFiles);
+          const newAttachments = await uploadTaskAttachments(editingTaskId, selectedFiles, submitButton);
           if (submitButton) submitButton.textContent = "Atualizando serviço...";
           await updateDoc(doc(db, "tarefas", editingTaskId), {
             ...payload,
@@ -2846,7 +2905,7 @@
           showToast(newAttachments.length ? "Serviço atualizado com anexo(s)." : "Serviço atualizado com sucesso.");
         } else {
           const newDocRef = doc(collection(db, "tarefas"));
-          const newAttachments = await uploadTaskAttachments(newDocRef.id, selectedFiles);
+          const newAttachments = await uploadTaskAttachments(newDocRef.id, selectedFiles, submitButton);
           if (submitButton) submitButton.textContent = "Gravando serviço...";
           await setDoc(newDocRef, {
             ...payload,
@@ -2973,7 +3032,9 @@
     function listenTasks() {
       if (unsubscribe) unsubscribe();
       const baseCollection = collection(db, "tarefas");
-      const tasksQuery = query(baseCollection);
+      const tasksQuery = isAdminUser()
+        ? query(baseCollection, orderBy("createdAt", "desc"))
+        : query(baseCollection, where("employee", "==", currentEmployeeName()));
 
       unsubscribe = onSnapshot(tasksQuery, (snapshot) => {
         tasks = snapshot.docs
@@ -2983,13 +3044,11 @@
             const bTime = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
             return bTime - aTime;
           });
-        setConnection("online", "Conectado ao Firebase");
         render();
       }, (error) => {
         console.error(error);
         setConnection("offline", "Erro ao carregar dados");
-        const code = error?.code ? ` (${error.code})` : "";
-        showToast(`Erro ao carregar tarefas${code}. Confira principalmente as regras do Firestore e se o e-mail logado está autorizado.`);
+        showToast("Erro ao ouvir o Firestore. Verifique as regras do banco de dados e os e-mails autorizados.");
       });
     }
 
@@ -3004,7 +3063,7 @@
         buildClientDatalist();
       }, (error) => {
         console.error(error);
-        showToast("Não foi possível carregar a lista de clientes do Firestore.");
+        showToast(`Não foi possível carregar clientes${error?.code ? ` (${error.code})` : ""}. O cadastro de serviço continua disponível.`);
         clients = getMergedClients([]);
         renderClients();
       });
@@ -3020,7 +3079,7 @@
         app = initializeApp(firebaseConfig);
         auth = getAuth(app);
         db = getFirestore(app);
-        storage = getStorage(app, `gs://${firebaseConfig.storageBucket}`);
+        storage = getStorage(app);
         firebaseReady = true;
         firebaseWarning.style.display = "none";
         setConnection("online", "Firebase pronto para login");
@@ -3054,7 +3113,9 @@
     document.getElementById("logoutBtn").addEventListener("click", handleLogout);
     document.getElementById("resetPasswordBtn").addEventListener("click", handlePasswordReset);
     document.getElementById("exportBackupBtn").addEventListener("click", exportBackupJson);
-    document.getElementById("openModalBtn").addEventListener("click", () => openModal());
+    document.getElementById("openModalBtn").addEventListener("click", () => {
+      try { openModal(); } catch (error) { console.error(error); showToast("Erro ao abrir Novo serviço. Use Ctrl + F5 e tente novamente."); }
+    });
     document.getElementById("closeModalBtn").addEventListener("click", closeModal);
     document.getElementById("cancelBtn").addEventListener("click", closeModal);
     document.getElementById("allTasksBtn").addEventListener("click", () => {
