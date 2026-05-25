@@ -134,41 +134,6 @@
       line-height: 1.5;
     }
 
-
-
-    .login-version-badge {
-      position: fixed;
-      right: 22px;
-      bottom: 18px;
-      z-index: 3;
-      padding: 10px 13px;
-      border-radius: 16px;
-      border: 1px solid rgba(255,255,255,0.14);
-      background: rgba(15,15,24,0.68);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      color: var(--muted);
-      font-size: 11px;
-      line-height: 1.45;
-      text-align: right;
-      box-shadow: 0 16px 44px rgba(0,0,0,0.32);
-    }
-
-    .login-version-badge strong {
-      display: block;
-      color: var(--text);
-      font-size: 12px;
-      letter-spacing: 0.04em;
-    }
-
-    @media (max-width: 720px) {
-      .login-version-badge {
-        right: 12px;
-        bottom: 10px;
-        max-width: calc(100% - 24px);
-      }
-    }
-
     .app-shell {
       width: min(1480px, calc(100% - 32px));
       margin: 0 auto;
@@ -1084,24 +1049,10 @@
       }
     }
 
-  
-
-    /* Correção de clique: garante que a barra superior e o botão Novo serviço fiquem clicáveis */
-    .topbar, .actions, #openModalBtn {
-      position: relative;
-      z-index: 20;
-      pointer-events: auto;
-    }
-    .modal { z-index: 9999; }
-
   </style>
 </head>
 <body>
   <section class="login-screen" id="loginScreen">
-    <div class="login-version-badge">
-      <strong>Versão 1.5</strong>
-      <span>Sistema criado por David Moretti Ferreira.</span>
-    </div>
     <div class="login-card">
       <div class="login-logo">A</div>
       <h1>Alfa Serviços</h1>
@@ -1120,7 +1071,7 @@
       </form>
 
       <div class="login-helper">
-        O usuário principal deve ser criado no Firebase Authentication. E-mails administrativos: <strong>alfacontabilidade2014@gmail.com</strong>, <strong>alfafiscalto@gmail.com</strong> e <strong>morettidavid20@gmail.com</strong>. A senha não fica gravada no HTML por segurança.
+        O usuário principal deve ser criado no Firebase Authentication com o e-mail <strong>alfafiscalto@gmail.com</strong>. A senha não fica gravada no HTML por segurança.
       </div>
     </div>
   </section>
@@ -1172,8 +1123,10 @@
         <div class="actions">
           <button class="btn btn-secondary" id="allTasksBtn" type="button">Visão geral</button>
           <button class="btn btn-secondary" id="exportBackupBtn" type="button" style="display:none;">Exportar backup</button>
+          <button class="btn btn-secondary" id="importBackupBtn" type="button" style="display:none;">Importar backup</button>
+          <input type="file" id="importBackupInput" accept="application/json,.json" style="display:none;" />
           <button class="btn btn-secondary" id="resetPasswordBtn" type="button">Alterar senha</button>
-          <button class="btn btn-primary" id="openModalBtn" type="button" onclick="window.forceOpenModal && window.forceOpenModal()">+ Novo serviço</button>
+          <button class="btn btn-primary" id="openModalBtn" type="button">+ Novo serviço</button>
           <button class="btn btn-ghost" id="logoutBtn" type="button">Sair</button>
         </div>
       </section>
@@ -1397,10 +1350,6 @@
             <label for="observationInput">Observação</label>
             <input type="text" id="observationInput" placeholder="Ex.: cliente aguardando, urgente, conferir com chefe..." />
           </div>
-          <div class="field full">
-            <label for="attachmentsInput">Anexos</label>
-            <input type="file" id="attachmentsInput" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.xml,.txt" />
-          </div>
         </div>
         <div class="actions" style="margin-top: 16px;">
           <button type="button" class="btn btn-secondary" id="cancelBtn">Cancelar</button>
@@ -1431,16 +1380,8 @@
       doc,
       onSnapshot,
       serverTimestamp,
-      query,
-      where,
-      orderBy
+      Timestamp
     } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
-    import {
-      getStorage,
-      ref as storageRef,
-      uploadBytes,
-      getDownloadURL
-    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js";
 
     const employees = [
       { name: "Henrique", color: "#ef4444" },
@@ -1467,7 +1408,7 @@
       "alfafiscalto@gmail.com": { name: "Henrique", role: "Administrador", employee: null },
       "alfacontabilidade2014@gmail.com": { name: "Henrique", role: "Administrador", employee: null },
       "rebcaravila@gmail.com": { name: "Rebeca", role: "Funcionária", employee: "Rebeca" },
-      "morettidavid20@gmail.com": { name: "David", role: "Funcionário", employee: "David" },
+      "morettidavid20@gmail.com": { name: "David", role: "Administrador", employee: null },
       "jhempreendimentos93@gmail.com": { name: "Amanda", role: "Funcionária", employee: "Amanda" },
       "flaviarodriguessoltu92@gmail.com": { name: "Flavia", role: "Funcionária", employee: "Flavia" },
       "joycealmeidabrito01@gmail.com": { name: "Joyce", role: "Funcionária", employee: "Joyce" },
@@ -1484,25 +1425,27 @@
       return allowedUserEmails.includes(normalizeEmail(email));
     }
 
-    function isAdminUser() {
-      return currentUserProfile?.role === "Administrador";
-    }
-
-    function currentEmployeeName() {
-      return currentUserProfile?.employee || null;
-    }
-
     /*
       CONFIGURAÇÃO NECESSÁRIA NO FIREBASE
 
       1) Firebase Console > Authentication > Sign-in method > habilite Email/Password.
       2) Authentication > Users > Add user:
-         E-mails administrativos: alfacontabilidade2014@gmail.com e alfafiscalto@gmail.com
+         E-mail: alfafiscalto@gmail.com
          Senha: defina a senha principal informada pelo escritório.
       3) Firestore Database > Create database.
-      4) Regras recomendadas: liberar somente usuários autorizados listados no sistema.
-         Cole as regras atualizadas informadas junto com este arquivo no Firestore e no Storage.
-      5) Copie as credenciais do app Web e substitua o objeto firebaseConfig abaixo somente se trocar o projeto Firebase.
+      4) Regras recomendadas para liberar somente usuário logado:
+
+      rules_version = '2';
+      service cloud.firestore {
+        match /databases/{database}/documents {
+          match /tarefas/{document=**} {
+            allow read, write: if request.auth != null
+              && request.auth.token.email == 'alfafiscalto@gmail.com';
+          }
+        }
+      }
+
+      5) Copie as credenciais do app Web e substitua o objeto firebaseConfig abaixo.
     */
     const firebaseConfig = {
       apiKey: "AIzaSyCMLD4nzWvBzL7WHbQnGVl2a3sFmC7WmsY",
@@ -1516,7 +1459,6 @@
     let app = null;
     let auth = null;
     let db = null;
-    let storage = null;
     let unsubscribe = null;
     let unsubscribeClients = null;
     let tasks = [];
@@ -1580,7 +1522,7 @@
     function showToast(message) {
       toast.textContent = message;
       toast.classList.add("show");
-      setTimeout(() => toast.classList.remove("show"), 7000);
+      setTimeout(() => toast.classList.remove("show"), 3900);
     }
 
     function setConnection(status, message) {
@@ -1742,19 +1684,6 @@
       URL.revokeObjectURL(url);
     }
 
-    async function handlePasswordReset() {
-      if (!auth || !currentUser?.email) {
-        showToast("Faça login para solicitar alteração de senha.");
-        return;
-      }
-      try {
-        await sendPasswordResetEmail(auth, currentUser.email);
-        showToast("Enviamos um link de redefinição de senha para seu e-mail.");
-      } catch (error) {
-        console.error(error);
-        showToast("Não foi possível enviar o link de senha. Confira o Authentication no Firebase.");
-      }
-    }
 
     function exportBackupJson() {
       if (!isAdminUser()) {
@@ -1768,7 +1697,7 @@
         versao: "1.5",
         exportadoEm: timestamp,
         exportadoPor: currentUser?.email || null,
-        observacao: "Backup manual gerado pelo navegador. Para backup automático real, use Firebase/Google Cloud com Cloud Functions ou Cloud Scheduler.",
+        observacao: "Backup manual gerado pelo navegador. Use o botão Importar backup para restaurar tarefas e clientes.",
         totalTarefas: tasks.length,
         totalClientes: clients.length,
         tarefas: tasks,
@@ -1786,6 +1715,77 @@
       URL.revokeObjectURL(url);
       localStorage.setItem(`backupAlfaRealizado-${fileDate}`, timestamp);
       showToast("Backup exportado em JSON com tarefas e clientes.");
+    }
+
+    function normalizeBackupTimestamp(value) {
+      if (!value) return null;
+      if (value?.toMillis) return value;
+      if (typeof value === "string") {
+        const parsed = Date.parse(value);
+        return Number.isNaN(parsed) ? null : Timestamp.fromMillis(parsed);
+      }
+      if (typeof value.seconds === "number") {
+        return Timestamp.fromMillis((value.seconds * 1000) + Math.floor((value.nanoseconds || 0) / 1000000));
+      }
+      return null;
+    }
+
+    function cleanBackupRecord(record, fallbackUserEmail) {
+      const cleaned = { ...record };
+      delete cleaned.id;
+      ["createdAt", "updatedAt", "restoredAt"].forEach(field => {
+        const normalized = normalizeBackupTimestamp(cleaned[field]);
+        if (normalized) cleaned[field] = normalized;
+        else if (field in cleaned) delete cleaned[field];
+      });
+      cleaned.restoredAt = serverTimestamp();
+      cleaned.restoredBy = fallbackUserEmail || null;
+      return cleaned;
+    }
+
+    async function importBackupJsonFile(file) {
+      if (!isAdminUser()) {
+        showToast("A importação de backup é exclusiva do administrador.");
+        return;
+      }
+      if (!file) return;
+
+      let backup;
+      try {
+        backup = JSON.parse(await file.text());
+      } catch (error) {
+        showToast("Arquivo inválido. Selecione um backup JSON exportado pelo sistema.");
+        return;
+      }
+
+      const backupTasks = Array.isArray(backup.tarefas) ? backup.tarefas : [];
+      const backupClients = Array.isArray(backup.clientes) ? backup.clientes : [];
+      if (!backupTasks.length && !backupClients.length) {
+        showToast("O backup não possui tarefas nem clientes para importar.");
+        return;
+      }
+
+      const confirmImport = confirm(`Importar backup com ${backupTasks.length} tarefa(s) e ${backupClients.length} cliente(s)? Registros com o mesmo ID serão atualizados.`);
+      if (!confirmImport) return;
+
+      try {
+        for (const item of backupTasks) {
+          const cleaned = cleanBackupRecord(item, currentUser?.email);
+          if (item.id) await setDoc(doc(db, "tarefas", item.id), cleaned, { merge: true });
+          else await addDoc(collection(db, "tarefas"), cleaned);
+        }
+
+        for (const item of backupClients) {
+          const cleaned = cleanBackupRecord(item, currentUser?.email);
+          if (item.id) await setDoc(doc(db, "clientes", item.id), cleaned, { merge: true });
+          else await addDoc(collection(db, "clientes"), cleaned);
+        }
+
+        showToast("Backup importado com sucesso.");
+      } catch (error) {
+        console.error(error);
+        showToast(error?.message || "Não foi possível importar o backup. Confira as regras do Firestore.");
+      }
     }
 
     function remindAdminBackup() {
@@ -1807,7 +1807,14 @@
 
       const admin = isAdminUser() || !currentUserProfile;
       const ownEmployee = currentEmployeeName();
-      const visibleEmployees = employees;
+      const visibleEmployees = admin ? employees : employees.filter(employee => employee.name === ownEmployee);
+
+      employees.forEach(employee => {
+        const option = document.createElement("option");
+        option.value = employee.name;
+        option.textContent = employee.name;
+        employeeInput.appendChild(option);
+      });
 
       if (admin) {
         const allBtn = document.createElement("button");
@@ -1836,11 +1843,6 @@
           <span class="employee-count" id="count-${employee.name}">0</span>
         `;
         employeeList.appendChild(btn);
-
-        const option = document.createElement("option");
-        option.value = employee.name;
-        option.textContent = employee.name;
-        employeeInput.appendChild(option);
 
         if (reportEmployeeInput) {
           const reportOption = document.createElement("option");
@@ -1916,8 +1918,7 @@
       document.getElementById("countAndamento").textContent = andamento;
       document.getElementById("countConcluido").textContent = concluido;
 
-      const countTodosEl = document.getElementById("count-todos");
-      if (countTodosEl) countTodosEl.textContent = tasks.length;
+      document.getElementById("count-todos").textContent = tasks.length;
       employees.forEach(employee => {
         const el = document.getElementById(`count-${employee.name}`);
         if (el) el.textContent = tasks.filter(task => task.employee === employee.name && task.status !== "concluido").length;
@@ -1941,7 +1942,6 @@
       const overdue = isOverdue(task);
       const oldRequest = task.requestDate && task.requestDate < todayISO();
       const dueToday = task.deadline && task.status !== "concluido" && task.deadline === todayISO();
-      const attachments = Array.isArray(task.attachments) ? task.attachments : [];
       const nextActionLabel = task.status === "pendente" ? "Iniciar" : task.status === "andamento" ? "Concluir" : "Reabrir";
       const nextActionClass = task.status === "pendente" ? "btn-start" : task.status === "andamento" ? "btn-finish" : "btn-reopen";
       const dueClass = overdue ? "visual-vencido" : dueToday ? "visual-hoje" : task.status === "concluido" ? "visual-ok" : "";
@@ -1966,17 +1966,7 @@
           ${dueToday ? `<span class="pill visual-hoje">⚠️ Vence hoje</span>` : ""}
           ${oldRequest ? `<span class="pill priority-media">Pedido anterior a hoje</span>` : ""}
           ${task.observation ? `<span class="pill">📝 ${escapeHTML(task.observation)}</span>` : ""}
-          ${attachments.length ? `<span class="pill">📎 ${attachments.length} anexo(s)</span>` : ""}
         </div>
-        ${attachments.length ? `
-          <div class="attachment-list">
-            ${attachments.map(file => `
-              <a class="attachment-link" href="${escapeHTML(file.url)}" target="_blank" rel="noopener">
-                📎 ${escapeHTML(file.name || "Anexo")}
-              </a>
-            `).join("")}
-          </div>
-        ` : ""}
         <div class="task-actions">
           <button class="icon-btn" data-action="edit" data-id="${task.id}">Editar</button>
           <button class="icon-btn ${nextActionClass}" data-action="next" data-id="${task.id}">${nextActionLabel}</button>
@@ -2020,13 +2010,11 @@
     }
 
     function openModal(task = null) {
-      if (!employeeInput.options.length) buildEmployees();
       editingTaskId = task?.id || null;
       modalTitle.textContent = task ? "Editar serviço" : "Novo serviço";
       document.getElementById("taskId").value = task?.id || "";
-      const defaultEmployee = currentEmployeeName() || employees[0].name;
-      employeeInput.value = task?.employee || (selectedEmployee !== "todos" ? selectedEmployee : defaultEmployee);
-      employeeInput.disabled = false;
+      const defaultEmployee = currentUserProfile?.employee || employees[0].name;
+      employeeInput.value = task?.employee || (selectedEmployee === "todos" ? defaultEmployee : selectedEmployee);
       document.getElementById("requestDateInput").value = task?.requestDate || todayISO();
       document.getElementById("deadlineInput").value = task?.deadline || todayISO();
       document.getElementById("clientInput").value = task ? clientLabel({ alias: task.clientAlias, name: task.clientName, document: task.clientDocument }) : "";
@@ -2050,16 +2038,6 @@
       editingTaskId = null;
     }
 
-
-    window.forceOpenModal = function() {
-      try {
-        openModal();
-      } catch (error) {
-        console.error("Erro ao abrir Novo serviço:", error);
-        alert("Não foi possível abrir a janela de Novo serviço. Atualize a página com Ctrl + F5 e tente novamente.");
-      }
-    };
-
     function getNextStatus(status) {
       if (status === "pendente") return "andamento";
       if (status === "andamento") return "concluido";
@@ -2068,79 +2046,7 @@
 
 
 
-    function getSelectedAttachmentFiles() {
-      const input = document.getElementById("attachmentsInput");
-      return Array.from(input?.files || []);
-    }
 
-    function makeSafeFileName(fileName) {
-      const cleanName = String(fileName || "arquivo")
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .replace(/[^a-zA-Z0-9._-]+/g, "-")
-        .replace(/-+/g, "-")
-        .replace(/^-|-$/g, "");
-      return cleanName || `arquivo-${Date.now()}`;
-    }
-
-    function explainFirebaseUploadError(error) {
-      const code = error?.code || "";
-      if (code.includes("storage/unauthorized")) {
-        return "O serviço foi bloqueado pelas regras do Firebase Storage. Atualize as regras do Storage com os e-mails autorizados.";
-      }
-      if (code.includes("storage/bucket-not-found")) {
-        return "O bucket do Firebase Storage não foi encontrado. Confira se o Storage está ativado e se o storageBucket do firebaseConfig está correto.";
-      }
-      if (code.includes("storage/object-not-found")) {
-        return "O arquivo foi enviado, mas a URL não foi localizada no Storage. Confira o bucket e tente novamente.";
-      }
-      if (code.includes("storage/canceled")) {
-        return "O envio do anexo foi cancelado antes de terminar.";
-      }
-      if (code.includes("storage/quota-exceeded")) {
-        return "A cota do Firebase Storage foi excedida. Verifique o plano/cota no Firebase.";
-      }
-      return `Falha ao anexar arquivo: ${error?.message || "erro desconhecido no Firebase Storage"}`;
-    }
-
-    async function uploadTaskAttachments(taskId, files = getSelectedAttachmentFiles()) {
-      if (!files.length) return [];
-      if (!storage) throw new Error("Storage não configurado.");
-      if (!currentUser?.email) throw new Error("Usuário não identificado para enviar anexos.");
-
-      const uploaded = [];
-      for (const file of files) {
-        const safeName = makeSafeFileName(file.name);
-        const uniqueName = `${Date.now()}-${crypto.randomUUID()}-${safeName}`;
-        const path = `tarefas/${taskId}/${uniqueName}`;
-        const fileRef = storageRef(storage, path);
-
-        try {
-          await uploadBytes(fileRef, file, {
-            contentType: file.type || "application/octet-stream",
-            customMetadata: {
-              uploadedBy: currentUser.email,
-              originalName: file.name,
-              taskId
-            }
-          });
-          const url = await getDownloadURL(fileRef);
-          uploaded.push({
-            name: file.name,
-            url,
-            path,
-            type: file.type || "application/octet-stream",
-            size: file.size,
-            uploadedAt: new Date().toISOString(),
-            uploadedBy: currentUser.email
-          });
-        } catch (error) {
-          console.error("Erro ao enviar anexo para o Firebase Storage:", error);
-          throw new Error(explainFirebaseUploadError(error));
-        }
-      }
-      return uploaded;
-    }
 
     async function saveTask(event) {
       event.preventDefault();
@@ -2162,11 +2068,6 @@
         updatedBy: currentUser?.email || null
       };
 
-      if (!payload.employee) {
-        showToast("Selecione o funcionário responsável pelo serviço.");
-        return;
-      }
-
       if (!payload.serviceType) {
         showToast("Informe o tipo de serviço antes de salvar.");
         return;
@@ -2187,41 +2088,30 @@
         return;
       }
 
-      const selectedFiles = getSelectedAttachmentFiles();
       const submitButton = taskForm.querySelector('button[type="submit"]');
       const originalSubmitText = submitButton?.textContent || "Salvar serviço";
 
       try {
         if (submitButton) {
           submitButton.disabled = true;
-          submitButton.textContent = selectedFiles.length ? "Enviando anexos..." : "Salvando...";
+          submitButton.textContent = editingTaskId ? "Atualizando serviço..." : "Salvando serviço...";
         }
 
         if (editingTaskId) {
-          const previousTask = tasks.find(item => item.id === editingTaskId);
-          const newAttachments = await uploadTaskAttachments(editingTaskId, selectedFiles);
-          if (submitButton) submitButton.textContent = "Atualizando serviço...";
-          await updateDoc(doc(db, "tarefas", editingTaskId), {
-            ...payload,
-            attachments: [...(previousTask?.attachments || []), ...newAttachments]
-          });
-          showToast(newAttachments.length ? "Serviço atualizado com anexo(s)." : "Serviço atualizado com sucesso.");
+          await updateDoc(doc(db, "tarefas", editingTaskId), payload);
+          showToast("Serviço atualizado com sucesso.");
         } else {
-          const newDocRef = doc(collection(db, "tarefas"));
-          const newAttachments = await uploadTaskAttachments(newDocRef.id, selectedFiles);
-          if (submitButton) submitButton.textContent = "Gravando serviço...";
-          await setDoc(newDocRef, {
+          await addDoc(collection(db, "tarefas"), {
             ...payload,
-            attachments: newAttachments,
             createdAt: serverTimestamp(),
             createdBy: currentUser.email
           });
-          showToast(newAttachments.length ? "Serviço criado com anexo(s)." : "Serviço criado com sucesso.");
+          showToast("Serviço criado com sucesso.");
         }
         closeModal();
       } catch (error) {
         console.error(error);
-        showToast(error?.message || "Não foi possível salvar. Confira as regras do Firestore/Storage e a configuração Firebase.");
+        showToast(error?.message || "Não foi possível salvar. Confira as regras do Firestore e a configuração Firebase.");
       } finally {
         if (submitButton) {
           submitButton.disabled = false;
@@ -2306,6 +2196,7 @@
       buildEmployees();
       document.getElementById("allTasksBtn").style.display = isAdminUser() ? "inline-flex" : "none";
       document.getElementById("exportBackupBtn").style.display = isAdminUser() ? "inline-flex" : "none";
+      document.getElementById("importBackupBtn").style.display = isAdminUser() ? "inline-flex" : "none";
       loginScreen.style.display = "none";
       appShell.classList.add("visible");
       setConnection("online", "Conectado ao Firebase");
@@ -2320,24 +2211,20 @@
       currentUserEmail.textContent = "-";
       appShell.classList.remove("visible");
       loginScreen.style.display = "grid";
+      document.getElementById("allTasksBtn").style.display = "inline-flex";
+      document.getElementById("exportBackupBtn").style.display = "none";
+      document.getElementById("importBackupBtn").style.display = "none";
       if (unsubscribe) unsubscribe();
       if (unsubscribeClients) unsubscribeClients();
       tasks = [];
       clients = initialClients.map(client => ({ ...client, source: "planilha" }));
-      selectedEmployee = "todos";
-      buildEmployees();
-      document.getElementById("allTasksBtn").style.display = "inline-flex";
-      document.getElementById("exportBackupBtn").style.display = "none";
       render();
       renderClients();
     }
 
     function listenTasks() {
       if (unsubscribe) unsubscribe();
-      const baseCollection = collection(db, "tarefas");
-      const tasksQuery = query(baseCollection);
-
-      unsubscribe = onSnapshot(tasksQuery, (snapshot) => {
+      unsubscribe = onSnapshot(collection(db, "tarefas"), (snapshot) => {
         tasks = snapshot.docs
           .map(docSnap => ({ id: docSnap.id, ...docSnap.data() }))
           .sort((a, b) => {
@@ -2382,7 +2269,6 @@
         app = initializeApp(firebaseConfig);
         auth = getAuth(app);
         db = getFirestore(app);
-        storage = getStorage(app, `gs://${firebaseConfig.storageBucket}`);
         firebaseReady = true;
         firebaseWarning.style.display = "none";
         setConnection("online", "Firebase pronto para login");
@@ -2416,6 +2302,11 @@
     document.getElementById("logoutBtn").addEventListener("click", handleLogout);
     document.getElementById("resetPasswordBtn").addEventListener("click", handlePasswordReset);
     document.getElementById("exportBackupBtn").addEventListener("click", exportBackupJson);
+    document.getElementById("importBackupBtn").addEventListener("click", () => document.getElementById("importBackupInput").click());
+    document.getElementById("importBackupInput").addEventListener("change", async (event) => {
+      await importBackupJsonFile(event.target.files?.[0]);
+      event.target.value = "";
+    });
     document.getElementById("openModalBtn").addEventListener("click", () => openModal());
     document.getElementById("closeModalBtn").addEventListener("click", closeModal);
     document.getElementById("cancelBtn").addEventListener("click", closeModal);
