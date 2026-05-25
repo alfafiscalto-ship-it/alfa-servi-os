@@ -2435,7 +2435,7 @@
 
       const admin = isAdminUser() || !currentUserProfile;
       const ownEmployee = currentEmployeeName();
-      const visibleEmployees = admin ? employees : employees.filter(employee => employee.name === ownEmployee);
+      const visibleEmployees = employees;
 
       if (admin) {
         const allBtn = document.createElement("button");
@@ -2481,7 +2481,7 @@
       selectedEmployee = admin ? (selectedEmployee || "todos") : ownEmployee;
       if (!selectedEmployee || (!admin && selectedEmployee !== ownEmployee)) selectedEmployee = admin ? "todos" : ownEmployee;
 
-      employeeInput.disabled = !admin;
+      employeeInput.disabled = false;
       if (reportEmployeeInput) {
         reportEmployeeInput.disabled = !admin;
         reportEmployeeInput.value = admin ? (reportEmployeeInput.value || "todos") : ownEmployee;
@@ -2651,10 +2651,9 @@
       editingTaskId = task?.id || null;
       modalTitle.textContent = task ? "Editar serviço" : "Novo serviço";
       document.getElementById("taskId").value = task?.id || "";
-      const defaultEmployee = currentUserProfile?.employee || employees[0].name;
-      employeeInput.value = currentEmployeeName() || task?.employee || (selectedEmployee === "todos" ? defaultEmployee : selectedEmployee);
-      if (isAdminUser()) employeeInput.value = task?.employee || (selectedEmployee === "todos" ? defaultEmployee : selectedEmployee);
-      employeeInput.disabled = !isAdminUser();
+      const defaultEmployee = currentEmployeeName() || employees[0].name;
+      employeeInput.value = task?.employee || (selectedEmployee !== "todos" ? selectedEmployee : defaultEmployee);
+      employeeInput.disabled = false;
       document.getElementById("requestDateInput").value = task?.requestDate || todayISO();
       document.getElementById("deadlineInput").value = task?.deadline || todayISO();
       document.getElementById("clientInput").value = task ? clientLabel({ alias: task.clientAlias, name: task.clientName, document: task.clientDocument }) : "";
@@ -2765,7 +2764,7 @@
 
       const selectedClient = parseClientInput(document.getElementById("clientInput").value);
       const payload = {
-        employee: isAdminUser() ? employeeInput.value : currentEmployeeName(),
+        employee: employeeInput.value,
         clientAlias: selectedClient.alias,
         clientName: selectedClient.name,
         clientDocument: selectedClient.document,
@@ -2779,6 +2778,11 @@
         updatedAt: serverTimestamp(),
         updatedBy: currentUser?.email || null
       };
+
+      if (!payload.employee) {
+        showToast("Selecione o funcionário responsável pelo serviço.");
+        return;
+      }
 
       if (!payload.serviceType) {
         showToast("Informe o tipo de serviço antes de salvar.");
@@ -2948,9 +2952,7 @@
     function listenTasks() {
       if (unsubscribe) unsubscribe();
       const baseCollection = collection(db, "tarefas");
-      const tasksQuery = isAdminUser()
-        ? query(baseCollection, orderBy("createdAt", "desc"))
-        : query(baseCollection, where("employee", "==", currentEmployeeName()));
+      const tasksQuery = query(baseCollection);
 
       unsubscribe = onSnapshot(tasksQuery, (snapshot) => {
         tasks = snapshot.docs
@@ -2960,11 +2962,13 @@
             const bTime = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
             return bTime - aTime;
           });
+        setConnection("online", "Conectado ao Firebase");
         render();
       }, (error) => {
         console.error(error);
         setConnection("offline", "Erro ao carregar dados");
-        showToast("Erro ao ouvir o Firestore. Verifique as regras do banco de dados e os e-mails autorizados.");
+        const code = error?.code ? ` (${error.code})` : "";
+        showToast(`Erro ao carregar tarefas${code}. Confira principalmente as regras do Firestore e se o e-mail logado está autorizado.`);
       });
     }
 
