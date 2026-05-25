@@ -1416,6 +1416,7 @@
       collection,
       addDoc,
       updateDoc,
+      setDoc,
       deleteDoc,
       doc,
       onSnapshot,
@@ -2685,34 +2686,76 @@
 
 
 
-    async function uploadTaskAttachments(taskId) {
+    function getSelectedAttachmentFiles() {
       const input = document.getElementById("attachmentsInput");
-      const files = Array.from(input.files || []);
+      return Array.from(input?.files || []);
+    }
+
+    function makeSafeFileName(fileName) {
+      const cleanName = String(fileName || "arquivo")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-zA-Z0-9._-]+/g, "-")
+        .replace(/-+/g, "-")
+        .replace(/^-|-$/g, "");
+      return cleanName || `arquivo-${Date.now()}`;
+    }
+
+    function explainFirebaseUploadError(error) {
+      const code = error?.code || "";
+      if (code.includes("storage/unauthorized")) {
+        return "O serviço foi bloqueado pelas regras do Firebase Storage. Atualize as regras do Storage com os e-mails autorizados.";
+      }
+      if (code.includes("storage/bucket-not-found")) {
+        return "O bucket do Firebase Storage não foi encontrado. Confira se o Storage está ativado e se o storageBucket do firebaseConfig está correto.";
+      }
+      if (code.includes("storage/object-not-found")) {
+        return "O arquivo foi enviado, mas a URL não foi localizada no Storage. Confira o bucket e tente novamente.";
+      }
+      if (code.includes("storage/canceled")) {
+        return "O envio do anexo foi cancelado antes de terminar.";
+      }
+      if (code.includes("storage/quota-exceeded")) {
+        return "A cota do Firebase Storage foi excedida. Verifique o plano/cota no Firebase.";
+      }
+      return `Falha ao anexar arquivo: ${error?.message || "erro desconhecido no Firebase Storage"}`;
+    }
+
+    async function uploadTaskAttachments(taskId, files = getSelectedAttachmentFiles()) {
       if (!files.length) return [];
       if (!storage) throw new Error("Storage não configurado.");
+      if (!currentUser?.email) throw new Error("Usuário não identificado para enviar anexos.");
 
       const uploaded = [];
       for (const file of files) {
-        const safeName = file.name.replace(/[^\w.\-À-ÿ ]+/g, "_");
-        const path = `tarefas/${taskId}/${Date.now()}-${safeName}`;
+        const safeName = makeSafeFileName(file.name);
+        const uniqueName = `${Date.now()}-${crypto.randomUUID()}-${safeName}`;
+        const path = `tarefas/${taskId}/${uniqueName}`;
         const fileRef = storageRef(storage, path);
-        await uploadBytes(fileRef, file, {
-          contentType: file.type || "application/octet-stream",
-          customMetadata: {
-            uploadedBy: currentUser?.email || "",
-            originalName: file.name
-          }
-        });
-        const url = await getDownloadURL(fileRef);
-        uploaded.push({
-          name: file.name,
-          url,
-          path,
-          type: file.type || "arquivo",
-          size: file.size,
-          uploadedAt: new Date().toISOString(),
-          uploadedBy: currentUser?.email || null
-        });
+
+        try {
+          await uploadBytes(fileRef, file, {
+            contentType: file.type || "application/octet-stream",
+            customMetadata: {
+              uploadedBy: currentUser.email,
+              originalName: file.name,
+              taskId
+            }
+          });
+          const url = await getDownloadURL(fileRef);
+          uploaded.push({
+            name: file.name,
+            url,
+            path,
+            type: file.type || "application/octet-stream",
+            size: file.size,
+            uploadedAt: new Date().toISOString(),
+            uploadedBy: currentUser.email
+          });
+        } catch (error) {
+          console.error("Erro ao enviar anexo para o Firebase Storage:", error);
+          throw new Error(explainFirebaseUploadError(error));
+        }
       }
       return uploaded;
     }
@@ -2757,32 +2800,46 @@
         return;
       }
 
+      const selectedFiles = getSelectedAttachmentFiles();
+      const submitButton = taskForm.querySelector('button[type="submit"]');
+      const originalSubmitText = submitButton?.textContent || "Salvar serviço";
+
       try {
+        if (submitButton) {
+          submitButton.disabled = true;
+          submitButton.textContent = selectedFiles.length ? "Enviando anexos..." : "Salvando...";
+        }
+
         if (editingTaskId) {
           const previousTask = tasks.find(item => item.id === editingTaskId);
-          const newAttachments = await uploadTaskAttachments(editingTaskId);
+          const newAttachments = await uploadTaskAttachments(editingTaskId, selectedFiles);
+          if (submitButton) submitButton.textContent = "Atualizando serviço...";
           await updateDoc(doc(db, "tarefas", editingTaskId), {
             ...payload,
             attachments: [...(previousTask?.attachments || []), ...newAttachments]
           });
-          showToast("Serviço atualizado com sucesso.");
+          showToast(newAttachments.length ? "Serviço atualizado com anexo(s)." : "Serviço atualizado com sucesso.");
         } else {
-          const newDoc = await addDoc(collection(db, "tarefas"), {
+          const newDocRef = doc(collection(db, "tarefas"));
+          const newAttachments = await uploadTaskAttachments(newDocRef.id, selectedFiles);
+          if (submitButton) submitButton.textContent = "Gravando serviço...";
+          await setDoc(newDocRef, {
             ...payload,
-            attachments: [],
+            attachments: newAttachments,
             createdAt: serverTimestamp(),
             createdBy: currentUser.email
           });
-          const newAttachments = await uploadTaskAttachments(newDoc.id);
-          if (newAttachments.length) {
-            await updateDoc(doc(db, "tarefas", newDoc.id), { attachments: newAttachments });
-          }
-          showToast("Serviço criado com sucesso.");
+          showToast(newAttachments.length ? "Serviço criado com anexo(s)." : "Serviço criado com sucesso.");
         }
         closeModal();
       } catch (error) {
         console.error(error);
-        showToast("Não foi possível salvar. Confira as regras do Firestore/Storage e a configuração Firebase.");
+        showToast(error?.message || "Não foi possível salvar. Confira as regras do Firestore/Storage e a configuração Firebase.");
+      } finally {
+        if (submitButton) {
+          submitButton.disabled = false;
+          submitButton.textContent = originalSubmitText;
+        }
       }
     }
 
@@ -2938,7 +2995,7 @@
         app = initializeApp(firebaseConfig);
         auth = getAuth(app);
         db = getFirestore(app);
-        storage = getStorage(app);
+        storage = getStorage(app, `gs://${firebaseConfig.storageBucket}`);
         firebaseReady = true;
         firebaseWarning.style.display = "none";
         setConnection("online", "Firebase pronto para login");
