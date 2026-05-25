@@ -1261,9 +1261,9 @@
         <div class="section-head">
           <div>
             <h2>Clientes e empresas</h2>
-            <p>Selecione clientes nos serviços e cadastre novos clientes sem precisar alterar o código.</p>
+            <p>Selecione clientes nos serviços, cadastre manualmente ou importe uma lista JSON direto para o Firebase sem deixar clientes gravados no HTML.</p>
           </div>
-          <button class="btn btn-secondary" id="syncSeedClientsBtn" type="button">Importar lista inicial</button>
+          <button class="btn btn-secondary" id="syncSeedClientsBtn" type="button">Importar clientes</button>
         </div>
 
         <div class="client-grid">
@@ -1414,6 +1414,32 @@
     </div>
   </div>
 
+  <div class="modal" id="clientImportModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Importar clientes</h3>
+        <button class="icon-btn" id="closeClientImportModalBtn" type="button">✕</button>
+      </div>
+
+      <div class="field">
+        <label for="clientImportTextarea">JSON dos clientes</label>
+        <textarea id="clientImportTextarea" placeholder='Cole aqui um JSON no formato: [{"alias":"CLIENTE", "name":"RAZÃO SOCIAL", "document":"00.000.000/0000-00"}]'></textarea>
+      </div>
+
+      <div class="config-box">
+        Formatos aceitos: uma lista JSON <code>[...]</code> ou um objeto com a chave <code>{"clientes": [...]}</code>.
+        Campos reconhecidos: <code>alias</code>, <code>name</code> e <code>document</code>. Também aceita <code>apelido</code>, <code>razaoSocial</code>, <code>nome</code>, <code>cnpj</code> e <code>cpf</code>.
+      </div>
+
+      <div class="actions" style="margin-top: 16px;">
+        <button type="button" class="btn btn-secondary" id="loadClientJsonFileBtn">Selecionar arquivo JSON</button>
+        <input type="file" id="clientJsonFileInput" accept="application/json,.json" style="display:none;" />
+        <button type="button" class="btn btn-ghost" id="cancelClientImportBtn">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="confirmClientImportBtn">Importar para o Firebase</button>
+      </div>
+    </div>
+  </div>
+
   <div class="toast" id="toast"></div>
 
   <script type="module">
@@ -1470,628 +1496,9 @@
       "julyanarocha@unitins.br": { name: "Julyana", role: "Funcionária", employee: "Julyana" }
     };
 
-    const initialClients = [
-      {
-            "alias": "ACADEMIA MEGA FIT",
-            "name": "ACADEMIA MEGA FIT LTDA",
-            "document": "38.303.484/0001-10"
-      },
-      {
-            "alias": "ACCCD",
-            "name": "ASSOCIACAO COMUNITARIA CULTURAL DE COMUNICACAO DE DIVINOPOLIS DO TOCANTINS - ACCCD",
-            "document": "51.406.476/0001-68"
-      },
-      {
-            "alias": "ADEDIV",
-            "name": "ADEDIV - ASSEMBLEIA DE DEUS DA DIVINOPOLIS - CIADSETA - CAMPO DIVINOPOLIS DO TOCANTINS",
-            "document": "28.900.134/0001-88"
-      },
-      {
-            "alias": "ADELVINO CARLOS DE S",
-            "name": "ADELVINO CARLOS DE SAUZA",
-            "document": "663.158.591/003-25"
-      },
-      {
-            "alias": "AEL",
-            "name": "ASSOCIACAO DOS EMPRESARIOS DE LAJEADO -TO - AEL",
-            "document": "61.451.665/0001-06"
-      },
-      {
-            "alias": "AGRO ANDRADE CASEARA",
-            "name": "LUIZ FERNANDO DE ANDRADE",
-            "document": "34.667.334/0002-16"
-      },
-      {
-            "alias": "AGRO COSTA PRODUTOS",
-            "name": "S R COSTA PRODUTOS AGROPECUARIOS",
-            "document": "65.868.075/0001-34"
-      },
-      {
-            "alias": "AGRO LOPES REPRESENT",
-            "name": "AGRO LOPES REPRESENTACAO LTDA",
-            "document": "52.826.136/0001-59"
-      },
-      {
-            "alias": "AGROP. DIVINOPOLIS",
-            "name": "ELCIO CASTRO CARVALHO EIRELI",
-            "document": "36.239.345/0001-40"
-      },
-      {
-            "alias": "AGROPECUÁRIA ANDRADE",
-            "name": "LUIZ FERNANDO DE ANDRADE - ME",
-            "document": "34.667.334/0001-35"
-      },
-      {
-            "alias": "ALFA CONTABILIDADE",
-            "name": "ALFA CONTABILIDADE E CONSULTORIA LTDA",
-            "document": "65.396.606/0001-33"
-      },
-      {
-            "alias": "ALFRA CONSTRUTORA",
-            "name": "ALFRA CONSTRUTORA LTDA",
-            "document": "41.451.186/0001-82"
-      },
-      {
-            "alias": "AMA FITNES",
-            "name": "AMA FITNESS ACADEMIA DE MUSCULACAO AVANCADA LTDA",
-            "document": "51.447.667/0001-78"
-      },
-      {
-            "alias": "AMBYENTE",
-            "name": "JADER FELIPE DE ALMEIDA BRITO LTDA",
-            "document": "35.297.107/0001-28"
-      },
-      {
-            "alias": "ARAGUAIA GAS",
-            "name": "JAWSON WALLACE MENEZES SANTOS",
-            "document": "25.247.435/0002-47"
-      },
-      {
-            "alias": "ARR BOTELHO EMPREEND",
-            "name": "ARR BOTELHO EMPREENDIMENTOS IMOBILIARIOS LTDA",
-            "document": "10.313.902/0001-31"
-      },
-      {
-            "alias": "ASSENT.  PALMERINHA",
-            "name": "ASSOCIACAO DOS PEQUENOS PRODUTORES RURAIS DO PROJETO DE ASSENTAMENTO PALMERINHA",
-            "document": "04.142.768/0001-50"
-      },
-      {
-            "alias": "ASSOC. C. LUZ E VIDA",
-            "name": "ASSOCIACAO COMUNITARIA LUZ E VIDA - ACLV",
-            "document": "03.130.294/0001-64"
-      },
-      {
-            "alias": "ASSOCIACAO RADIO LAG",
-            "name": "ASSOCIACAO RADIO COMUNITARIA CRIATIVA FM",
-            "document": "08.092.134/0001-91"
-      },
-      {
-            "alias": "ASSOCIACAO SÃO FELIX",
-            "name": "ASSOCIACAO COMERCIAL E EMPRESARIAL DE SAO FELIX DO TOCANTINS",
-            "document": "58.451.852/0001-85"
-      },
-      {
-            "alias": "ATF COLHEITAS",
-            "name": "A FERREIRA",
-            "document": "48.945.376/0001-03"
-      },
-      {
-            "alias": "AUTO MECANICA ALVES",
-            "name": "T F FEITOZA LTDA",
-            "document": "37.861.014/0001-00"
-      },
-      {
-            "alias": "AUTO MOLAS CAPELÃO",
-            "name": "BENTO DIEGO DA S COSTA LTDA",
-            "document": "48.153.979/0001-64"
-      },
-      {
-            "alias": "BARATÃO SUPERMERCADO",
-            "name": "29.524.989 ARNOU ARAUJO ROCHA",
-            "document": "29.524.989/0001-14"
-      },
-      {
-            "alias": "C J B DE BRITO E CIA",
-            "name": "C J B DE BRITO E CIA LTDA",
-            "document": "08.853.179/0001-31"
-      },
-      {
-            "alias": "CENTRAL DISTRIBUIDOR",
-            "name": "LUCAS DA SILVA ALVES EIRELI",
-            "document": "38.828.053/0001-78"
-      },
-      {
-            "alias": "CERAMICA DONA MARIA",
-            "name": "W GOMES WANDERLEY LTDA",
-            "document": "27.854.450/0001-06"
-      },
-      {
-            "alias": "CERAMICA PIEDADE",
-            "name": "HAMILTON EDSON ARAUJO",
-            "document": "42.013.389/0001-50"
-      },
-      {
-            "alias": "COM. COMPRE BEM",
-            "name": "REGES S CORDEIRO EIRELI",
-            "document": "43.107.220/0001-21"
-      },
-      {
-            "alias": "COMERCIAL BARBOSA",
-            "name": "BARBOSA & DIAS LTDA",
-            "document": "05.525.388/0001-68"
-      },
-      {
-            "alias": "COMERCIAL CUPIM",
-            "name": "J L P DE SOUZA",
-            "document": "10.922.807/0001-35"
-      },
-      {
-            "alias": "COMERCIAL SURUBIM",
-            "name": "CECILIO D S CARVALHO LTDA",
-            "document": "48.997.510/0001-01"
-      },
-      {
-            "alias": "CONNECTMAIS",
-            "name": "ROMARIO DA SILVA CABRAL EIRELI - ME",
-            "document": "27.502.083/0001-73"
-      },
-      {
-            "alias": "CONTRUTORA LD",
-            "name": "M D V COELHO LTDA",
-            "document": "47.857.688/0001-94"
-      },
-      {
-            "alias": "CONVENIENCIA LOPES",
-            "name": "CLAUDIO LOPES DO COUTO EIRELI",
-            "document": "31.844.140/0001-70"
-      },
-      {
-            "alias": "COOP. DOS GARIMPEIRO",
-            "name": "COOPERATIVA DOS GARIMPEIROS DO TOCANTINS",
-            "document": "36.669.397/0001-56"
-      },
-      {
-            "alias": "D’AGRO",
-            "name": "D’AGRO REPRESENTAÇÕES TECNOLOGIA AGRÍCOLA E SERVIÇOS LTDA",
-            "document": "57.955.714/0001-70"
-      },
-      {
-            "alias": "DCONEKTE",
-            "name": "DCONEKTE MULTIMIDIA LTDA",
-            "document": "15.097.886/0001-00"
-      },
-      {
-            "alias": "DCONEKTE FILIAL",
-            "name": "DCONEKTE MULTIMIDIA LTDA",
-            "document": "15.097.886/0002-91"
-      },
-      {
-            "alias": "DENES DECORAÇÕES",
-            "name": "V LIMA DE OLIVEIRA LTDA",
-            "document": "51.826.723/0001-85"
-      },
-      {
-            "alias": "DERMALASER",
-            "name": "ISNARA RIBEIRO FONTES LTDA",
-            "document": "39.669.723/0001-13"
-      },
-      {
-            "alias": "DIST. EN. AMIGOS",
-            "name": "JOSE DINO A ROSA",
-            "document": "32.603.725/0001-60"
-      },
-      {
-            "alias": "DISTRIBUID. PRECOBOM",
-            "name": "A MOREIRA DA SILVA LTDA",
-            "document": "57.826.783/0001-84"
-      },
-      {
-            "alias": "DK FABRICA DE DOCES",
-            "name": "K A COMERCIO E EMPREENDIMENTOS LTDA",
-            "document": "36.374.797/0001-34"
-      },
-      {
-            "alias": "EDIANE BRITO SHOWROO",
-            "name": "E FERREIRA BRITO LTDA",
-            "document": "51.501.129/0001-14"
-      },
-      {
-            "alias": "ELETRO LEO",
-            "name": "JOSE LEONARDO SIQUEIRA",
-            "document": "48.705.037/0001-41"
-      },
-      {
-            "alias": "ELETRO LIDER",
-            "name": "N MOREIRA DOS SANTOS",
-            "document": "45.321.347/0001-74"
-      },
-      {
-            "alias": "ELETROSILOS",
-            "name": "ELETROSILOS LTDA",
-            "document": "62.451.934/0001-05"
-      },
-      {
-            "alias": "EMPREITEIRA J F NOVA",
-            "name": "J FRANCISCO P S LTDA",
-            "document": "66.500.791/0001-27"
-      },
-      {
-            "alias": "EMPREITERA JOSE FRAN",
-            "name": "J FRANCISCO PEREIRA DA SILVA LTDA",
-            "document": "53.504.066/0001-85"
-      },
-      {
-            "alias": "ENGENORT",
-            "name": "ENGENORT CONSTRUTORA LTDA",
-            "document": "55.145.334/0001-45"
-      },
-      {
-            "alias": "EVOLUT ENGENHARIA",
-            "name": "EVOLUT ENGENHARIA LTDA",
-            "document": "65.845.357/0001-16"
-      },
-      {
-            "alias": "FABIO COLHEITAS",
-            "name": "27.096.961 FABIO OLIVEIRA FERREIRA",
-            "document": "27.096.961/0001-06"
-      },
-      {
-            "alias": "FAZ. VALE DA PROMESS",
-            "name": "FAZENDA VALE DA PROMESSA",
-            "document": "008.078.401/001-26"
-      },
-      {
-            "alias": "FAZENDA BOA VISTA",
-            "name": "WAINER GOMES WANDERLEY",
-            "document": "158.925.731/001-18"
-      },
-      {
-            "alias": "FAZENDA BURITI",
-            "name": "DIVINO EUGENIO DOS SANTOS",
-            "document": "382.064.201/001-67"
-      },
-      {
-            "alias": "FAZENDA NOVO HORIZON",
-            "name": "LUIZ ANTONIO MIRANDA",
-            "document": "328.421.639/001-21"
-      },
-      {
-            "alias": "FAZENDA SÃO JOSE",
-            "name": "ADARCIRI GONCALVES MOREIRA",
-            "document": "044.916.291/001-08"
-      },
-      {
-            "alias": "FP PRODUCOES",
-            "name": "F S FERREIRA LTDA",
-            "document": "21.072.243/0001-05"
-      },
-      {
-            "alias": "GAS SUPER 10",
-            "name": "JAWSON WALLACE MENEZES SANTOS",
-            "document": "25.247.435/0001-66"
-      },
-      {
-            "alias": "GS SOLUCOES E EVENTO",
-            "name": "GS LOCAÇÕES LTDA",
-            "document": "14.841.840/0001-91"
-      },
-      {
-            "alias": "HL PISCINAS",
-            "name": "ADELVINO CARLOS DE SOUZA",
-            "document": "42.308.433/0001-59"
-      },
-      {
-            "alias": "HL PISCINAS FILIAL",
-            "name": "A C DE SOUZA LTDA",
-            "document": "42.308.433/0002-30"
-      },
-      {
-            "alias": "HOTEL GOIANO",
-            "name": "E C DOS SANTOS FERREIRA",
-            "document": "36.253.262/0001-05"
-      },
-      {
-            "alias": "IGREJA CRISTO E VIDA",
-            "name": "IGREJA ASSEMBLEIA DE DEUS MINISTERIO CRISTO E VIDA",
-            "document": "37.128.627/0001-32"
-      },
-      {
-            "alias": "IGREJA EXERCITO DE D",
-            "name": "IGREJA PENTECOSTAL EXERCITO DE DEUS",
-            "document": "24.757.013/0001-78"
-      },
-      {
-            "alias": "IGREJA METANOIA",
-            "name": "IGREJA ASSEMBLEIA DE DEUS PROJETO METANOIA MISSOES SEM FRONTEIRAS - IADPMF",
-            "document": "31.540.112/0001-69"
-      },
-      {
-            "alias": "IGREJA RENASCER",
-            "name": "IGREJA ASSEMBLEIA DE DEUS RENASCER - IADR",
-            "document": "48.340.804/0001-66"
-      },
-      {
-            "alias": "IMOB FAZENDAS TOCANT",
-            "name": "G R PEREIRA LTDA",
-            "document": "44.041.372/0001-31"
-      },
-      {
-            "alias": "J CARDOSO DE SA",
-            "name": "J CARDOSO DE SA LTDA",
-            "document": "18.342.525/0001-70"
-      },
-      {
-            "alias": "JC INFORMATICA",
-            "name": "I D LIMA LTDA",
-            "document": "42.232.921/0001-20"
-      },
-      {
-            "alias": "JH EMPREENDIMENTOS",
-            "name": "JOSE HENRIQUE DE ALMEIDA BRITO",
-            "document": "24.579.102/0001-71"
-      },
-      {
-            "alias": "JK SERVICOS DE CONST",
-            "name": "JK SERVICOS DE CONSTRUTORA LTDA",
-            "document": "26.890.071/0001-09"
-      },
-      {
-            "alias": "JSC MATERIAS",
-            "name": "JOSE CARLOS SILVA LOBO EIRELI",
-            "document": "32.482.346/0001-60"
-      },
-      {
-            "alias": "KYNAR COMUNICACAO",
-            "name": "KYNAR COMUNICACAO VISUAL LTDA",
-            "document": "48.761.179/0001-26"
-      },
-      {
-            "alias": "LIMIAR",
-            "name": "PAULO ANTONIO DA SILVA",
-            "document": "41.544.293/0001-55"
-      },
-      {
-            "alias": "LIMPISCINAS",
-            "name": "EDIMILSON LOPES DA CRUZ",
-            "document": "01.129.611/0001-05"
-      },
-      {
-            "alias": "LUIZ CLAUDIO",
-            "name": "LUIZ CLAUDIO REZENDE DE AZEVEDO",
-            "document": "35.934.583/0001-02"
-      },
-      {
-            "alias": "M G DE SOUZA LTDA",
-            "name": "M G DE SOUZA LTDA",
-            "document": "48.581.887/0001-85"
-      },
-      {
-            "alias": "M. O. MUNCK E TRANSP",
-            "name": "M.O.M. DA ROSA",
-            "document": "15.740.818/0001-18"
-      },
-      {
-            "alias": "MANAS VARIEDADES",
-            "name": "IRACELIA AIRES WANDERLEY 03469564124",
-            "document": "42.253.854/0001-20"
-      },
-      {
-            "alias": "MARCOS CARVALHO",
-            "name": "MARCOS CARVALHO MARIANO",
-            "document": "005.366.111/001-14"
-      },
-      {
-            "alias": "MARI K AVIAMENT",
-            "name": "MARI K AVIAMENTOS LTDA",
-            "document": "55.061.621/0001-77"
-      },
-      {
-            "alias": "MAT TONHÃO",
-            "name": "A BOMFIM DA SILVA RODRIGUES LTDA",
-            "document": "47.598.506/0001-08"
-      },
-      {
-            "alias": "MAYCON DIAGNOSTICO",
-            "name": "MAYCON DIAGNOSTICO LTDA",
-            "document": "61.110.586/0001-31"
-      },
-      {
-            "alias": "MERCEARIA ZORO",
-            "name": "Z MENDES DE CARVALHO LTDA",
-            "document": "60.299.566/0001-98"
-      },
-      {
-            "alias": "MINEBR NATIVIDADE",
-            "name": "MINEBR NATIVIDADE LTDA",
-            "document": "46.593.966/0001-80"
-      },
-      {
-            "alias": "MUNDIAL PNEUS",
-            "name": "VALTER RODRIGUES OLIVEIRA - ME",
-            "document": "27.905.815/0001-76"
-      },
-      {
-            "alias": "NETO",
-            "name": "ANTONIO ALVES DE ALMEIDA NETO",
-            "document": "26.941.466/0001-85"
-      },
-      {
-            "alias": "NOGUEIRA ELETRICA",
-            "name": "NOGUEIRA CONSTRUCOES E INFRAESTRUTURA LTDA",
-            "document": "33.685.328/0001-48"
-      },
-      {
-            "alias": "NORTE & NORDESTE",
-            "name": "NORTE & NORDESTE MINERIOS DO BRASIL LTDA",
-            "document": "57.296.867/0001-53"
-      },
-      {
-            "alias": "NORTE NAPAS",
-            "name": "C P DE ARAUJO LTDA",
-            "document": "43.677.280/0001-80"
-      },
-      {
-            "alias": "NUTRI MAIS",
-            "name": "RESTAURANTE E LANCHONETE NUTRI MAIS LTDA",
-            "document": "49.931.842/0001-56"
-      },
-      {
-            "alias": "OTICA ALTO OLHAR PSO",
-            "name": "L S FERREIRA LTDA",
-            "document": "18.409.866/0003-88"
-      },
-      {
-            "alias": "OTICA NOVO OLHAR",
-            "name": "L S FERREIRA LTDA",
-            "document": "18.409.866/0001-16"
-      },
-      {
-            "alias": "OTICA NOVO OLHAR DIV",
-            "name": "L S FERREIRA LTDA",
-            "document": "18.409.866/0002-05"
-      },
-      {
-            "alias": "OTICAS ALTO OLHAR",
-            "name": "41.514.982 JOAO OLIVEIRA DE ALENCAR",
-            "document": "41.514.982/0001-17"
-      },
-      {
-            "alias": "OTICAS SANTANA",
-            "name": "49.057.074 HEITOR SOARES FERREIRA",
-            "document": "49.057.074/0001-53"
-      },
-      {
-            "alias": "PANIFICADORA TOCANTI",
-            "name": "PAULO ALVES DOS SANTOS",
-            "document": "33.090.554/0001-86"
-      },
-      {
-            "alias": "PÃO IMPERIO PANIFICA",
-            "name": "S DE OLIVEIRA SOUZA LTDA",
-            "document": "34.466.799/0001-28"
-      },
-      {
-            "alias": "PEDRA BRANCA",
-            "name": "PEDRA BRANCA MATERIAL DE CONSTRUCAO LTDA",
-            "document": "24.776.447/0001-15"
-      },
-      {
-            "alias": "POLO AGRO",
-            "name": "POLO DEFENSIVOS AGRICOLAS E FERRAGISTA LTDA",
-            "document": "34.104.358/0001-86"
-      },
-      {
-            "alias": "PONTO DA PACOCA",
-            "name": "MARCELO FARIAS DE OLIVEIRA 24150967253",
-            "document": "26.634.305/0001-49"
-      },
-      {
-            "alias": "POSTO DE MEDICAMENTO",
-            "name": "F TAVARES PEREIRA LTDA",
-            "document": "56.900.670/0001-19"
-      },
-      {
-            "alias": "POUSADA POR DO SOL",
-            "name": "POUSADA POR DO SOL LTDA",
-            "document": "59.794.076/0001-89"
-      },
-      {
-            "alias": "R. L. REPRESENTACOES",
-            "name": "R. L. REPRESENTACOES COMERCIAIS LTDA",
-            "document": "27.403.058/0001-32"
-      },
-      {
-            "alias": "RIBRAX",
-            "name": "S R DE ABREU LTDA",
-            "document": "21.359.066/0001-42"
-      },
-      {
-            "alias": "RMB PROJETOS E CONSU",
-            "name": "RMB PROJETOS E CONSULTORIA LTDA",
-            "document": "20.476.712/0001-99"
-      },
-      {
-            "alias": "RODRIGUES BARBEARIA",
-            "name": "RODRIGUES BARBEARIA LTDA",
-            "document": "43.606.750/0001-14"
-      },
-      {
-            "alias": "S R MARIANOPOLIS F1",
-            "name": "S R DE ABREU LTDA",
-            "document": "21.359.066/0002-23"
-      },
-      {
-            "alias": "SANTA CLARA C DOS SA",
-            "name": "C DOS SANTOS CARVALHO",
-            "document": "29.860.447/0001-12"
-      },
-      {
-            "alias": "SANTA CLARA NETO",
-            "name": "SANTA CLARA SERVICOS E LOCACOES LTDA",
-            "document": "55.804.658/0001-48"
-      },
-      {
-            "alias": "SÃO PEDRO EMPREENDIM",
-            "name": "LL WANDERLEY - ME",
-            "document": "35.230.650/0001-08"
-      },
-      {
-            "alias": "SINDICATO TRAB. DIV.",
-            "name": "SINDICATO DOS TRABALHADORES E TRABALHADORAS RURAIS AGRICULTORES E AGRICULTORAS FAMILIARES DE DIVINOPOLIS DO TOCANTINS - TO",
-            "document": "24.852.063/0001-34"
-      },
-      {
-            "alias": "SONHO DE CRIANÇA",
-            "name": "M V A SANTOS LTDA",
-            "document": "08.332.823/0001-26"
-      },
-      {
-            "alias": "SOS BORRACHARIA",
-            "name": "JOSE PEREIRA DA SILVA",
-            "document": "13.994.861/0001-84"
-      },
-      {
-            "alias": "TIAGO MIGUEL SILVANI",
-            "name": "TIAGO MIGUEL SILVANI",
-            "document": "100.130.216/002-20"
-      },
-      {
-            "alias": "TORNEADORA ALADIM",
-            "name": "DERGILIO GOMES DA SILVA - ME",
-            "document": "24.201.900/0001-65"
-      },
-      {
-            "alias": "VESTY FASHION",
-            "name": "IRAILDE AIRES WANDERLEY",
-            "document": "15.152.303/0001-05"
-      },
-      {
-            "alias": "VIVEIRO JARDIM PARIS",
-            "name": "RAIMUNDO F DA SILVA LTDA",
-            "document": "22.850.794/0001-15"
-      },
-      {
-            "alias": "WSC CONSTRUTORA",
-            "name": "WSC CONSTUTORA LTDA",
-            "document": "64.470.327/0001-00"
-      },
-      {
-            "alias": "WSC ENGENHARIA",
-            "name": "WSC ENGENHARIA GEOLOGIA SERVICOS AMBIENTAIS E REPRESENTACOES LTDA",
-            "document": "48.168.684/0001-61"
-      },
-      {
-            "alias": "WSC MINERACAO & MEIO",
-            "name": "WSC MINERACAO & MEIO AMBIENTE LTDA",
-            "document": "59.090.155/0001-09"
-      },
-      {
-            "alias": "Y O WATANABE",
-            "name": "Y O WATANABE LTDA",
-            "document": "64.137.551/0001-84"
-      }
-];
+    // Os clientes não ficam mais gravados dentro do HTML.
+    // Use o módulo Clientes > Importar clientes para enviar um JSON para a coleção "clientes" do Firestore.
+    const initialClients = [];
 
     function normalizeEmail(email) {
       return String(email || "").trim().toLowerCase();
@@ -2136,7 +1543,7 @@
     let unsubscribe = null;
     let unsubscribeClients = null;
     let tasks = [];
-    let clients = initialClients.map(client => ({ ...client, source: "planilha" }));
+    let clients = [];
     let currentReportRows = [];
     let selectedEmployee = "todos";
     let editingTaskId = null;
@@ -2246,7 +1653,7 @@
 
     function getMergedClients(extraClients = []) {
       const map = new Map();
-      [...initialClients.map(c => ({ ...c, source: "planilha" })), ...extraClients].forEach(client => {
+      extraClients.forEach(client => {
         const key = normalizeClientKey(client);
         if (!key || key === "|") return;
         map.set(key, { ...client, source: client.source || "firebase" });
@@ -2312,25 +1719,116 @@
       showToast("Cliente adicionado com sucesso.");
     }
 
-    async function syncSeedClients() {
+    function openClientImportModal() {
       if (!firebaseReady || !currentUser) {
         showToast("Faça login antes de importar clientes.");
         return;
       }
-      const confirmSync = confirm(`Importar ${initialClients.length} clientes da planilha para o Firestore? Faça isso apenas uma vez.`);
-      if (!confirmSync) return;
-      let count = 0;
-      for (const client of initialClients) {
-        await addDoc(collection(db, "clientes"), {
-          ...client,
-          createdAt: serverTimestamp(),
-          createdBy: currentUser.email,
-          source: "planilha",
-          active: true
-        });
-        count += 1;
+      document.getElementById("clientImportTextarea").value = "";
+      document.getElementById("clientImportModal").classList.add("open");
+      document.body.classList.add("modal-is-open");
+    }
+
+    function closeClientImportModal() {
+      document.getElementById("clientImportModal").classList.remove("open");
+      document.body.classList.remove("modal-is-open");
+    }
+
+    function slugClientId(value) {
+      return String(value || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+        .slice(0, 80);
+    }
+
+    function normalizeImportedClient(item) {
+      const alias = String(item.alias || item.apelido || item.fantasia || item.nomeFantasia || item.name || item.nome || "").trim();
+      const name = String(item.name || item.razaoSocial || item.razao_social || item.nome || item.alias || item.apelido || "").trim();
+      const documentNumber = String(item.document || item.cnpj || item.cpf || item.cnpjCpf || item.documento || "").trim();
+      if (!alias && !name && !documentNumber) return null;
+      return {
+        alias: alias || name || documentNumber,
+        name: name || alias || documentNumber,
+        document: documentNumber
+      };
+    }
+
+    function parseClientsJson(text) {
+      const parsed = JSON.parse(text);
+      const rawClients = Array.isArray(parsed) ? parsed : Array.isArray(parsed.clientes) ? parsed.clientes : Array.isArray(parsed.clients) ? parsed.clients : null;
+      if (!rawClients) throw new Error("O JSON precisa ser uma lista de clientes ou conter a chave clientes.");
+      return rawClients.map(normalizeImportedClient).filter(Boolean);
+    }
+
+    async function importClientsFromJsonText() {
+      if (!firebaseReady || !currentUser) {
+        showToast("Faça login antes de importar clientes.");
+        return;
       }
-      showToast(`${count} clientes enviados para o Firestore.`);
+
+      const textarea = document.getElementById("clientImportTextarea");
+      const jsonText = textarea.value.trim();
+      if (!jsonText) {
+        showToast("Cole o JSON dos clientes antes de importar.");
+        return;
+      }
+
+      let importedClients = [];
+      try {
+        importedClients = parseClientsJson(jsonText);
+      } catch (error) {
+        showToast(error?.message || "JSON inválido. Confira vírgulas, aspas e colchetes.");
+        return;
+      }
+
+      if (!importedClients.length) {
+        showToast("Nenhum cliente válido foi encontrado no JSON.");
+        return;
+      }
+
+      const confirmImport = confirm(`Importar ${importedClients.length} cliente(s) para a coleção clientes do Firestore?`);
+      if (!confirmImport) return;
+
+      const button = document.getElementById("confirmClientImportBtn");
+      const originalText = button?.textContent || "Importar para o Firebase";
+
+      try {
+        if (button) {
+          button.disabled = true;
+          button.textContent = "Importando...";
+        }
+
+        let count = 0;
+        for (const client of importedClients) {
+          const documentDigits = String(client.document || "").replace(/\D/g, "");
+          const fallbackId = slugClientId(client.alias || client.name);
+          const clientId = documentDigits || fallbackId || doc(collection(db, "clientes")).id;
+          await setDoc(doc(db, "clientes", clientId), {
+            ...client,
+            source: "json",
+            active: true,
+            importedAt: serverTimestamp(),
+            importedBy: currentUser.email,
+            updatedAt: serverTimestamp(),
+            updatedBy: currentUser.email
+          }, { merge: true });
+          count += 1;
+        }
+
+        closeClientImportModal();
+        showToast(`${count} cliente(s) importado(s) para o Firebase.`);
+      } catch (error) {
+        console.error(error);
+        showToast(error?.message || "Não foi possível importar clientes. Confira as regras do Firestore.");
+      } finally {
+        if (button) {
+          button.disabled = false;
+          button.textContent = originalText;
+        }
+      }
     }
 
     function setView(view) {
@@ -2951,7 +2449,7 @@
       if (unsubscribe) unsubscribe();
       if (unsubscribeClients) unsubscribeClients();
       tasks = [];
-      clients = initialClients.map(client => ({ ...client, source: "planilha" }));
+      clients = [];
       selectedEmployee = "todos";
       buildEmployees();
       document.getElementById("allTasksBtn").style.display = "inline-flex";
@@ -2984,7 +2482,7 @@
     function listenClients() {
       if (unsubscribeClients) unsubscribeClients();
       unsubscribeClients = onSnapshot(collection(db, "clientes"), (snapshot) => {
-        const firebaseClients = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data(), source: "firebase" }));
+        const firebaseClients = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data(), source: docSnap.data().source || "firebase" }));
         clients = getMergedClients(firebaseClients);
         renderClients();
         buildClientDatalist();
@@ -3068,7 +2566,20 @@
     document.getElementById("viewClientsBtn").addEventListener("click", () => setView("clients"));
     document.getElementById("viewReportsBtn").addEventListener("click", () => setView("reports"));
     document.getElementById("addClientBtn").addEventListener("click", addClient);
-    document.getElementById("syncSeedClientsBtn").addEventListener("click", syncSeedClients);
+    document.getElementById("syncSeedClientsBtn").addEventListener("click", openClientImportModal);
+    document.getElementById("closeClientImportModalBtn").addEventListener("click", closeClientImportModal);
+    document.getElementById("cancelClientImportBtn").addEventListener("click", closeClientImportModal);
+    document.getElementById("confirmClientImportBtn").addEventListener("click", importClientsFromJsonText);
+    document.getElementById("loadClientJsonFileBtn").addEventListener("click", () => document.getElementById("clientJsonFileInput").click());
+    document.getElementById("clientJsonFileInput").addEventListener("change", async (event) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      document.getElementById("clientImportTextarea").value = await file.text();
+      event.target.value = "";
+    });
+    document.getElementById("clientImportModal").addEventListener("click", event => {
+      if (event.target === document.getElementById("clientImportModal")) closeClientImportModal();
+    });
     document.getElementById("clientSearchInput").addEventListener("input", renderClients);
     document.getElementById("generateReportBtn").addEventListener("click", generateReport);
     document.getElementById("exportReportBtn").addEventListener("click", exportReportCsv);
