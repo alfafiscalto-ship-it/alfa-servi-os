@@ -134,6 +134,41 @@
       line-height: 1.5;
     }
 
+
+
+    .login-version-badge {
+      position: fixed;
+      right: 22px;
+      bottom: 18px;
+      z-index: 3;
+      padding: 10px 13px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(15,15,24,0.68);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.45;
+      text-align: right;
+      box-shadow: 0 16px 44px rgba(0,0,0,0.32);
+    }
+
+    .login-version-badge strong {
+      display: block;
+      color: var(--text);
+      font-size: 12px;
+      letter-spacing: 0.04em;
+    }
+
+    @media (max-width: 720px) {
+      .login-version-badge {
+        right: 12px;
+        bottom: 10px;
+        max-width: calc(100% - 24px);
+      }
+    }
+
     .app-shell {
       width: min(1480px, calc(100% - 32px));
       margin: 0 auto;
@@ -1053,6 +1088,10 @@
 </head>
 <body>
   <section class="login-screen" id="loginScreen">
+    <div class="login-version-badge">
+      <strong>Versão 1.4</strong>
+      <span>Sistema criado por David Moretti Ferreira.</span>
+    </div>
     <div class="login-card">
       <div class="login-logo">A</div>
       <h1>Alfa Serviços</h1>
@@ -1061,7 +1100,7 @@
       <form id="loginForm">
         <div class="field">
           <label for="loginEmail">E-mail</label>
-          <input type="email" id="loginEmail" value="alfafiscalto@gmail.com" autocomplete="username" required>
+          <input type="email" id="loginEmail" value="alfacontabilidade2014@gmail.com" autocomplete="username" required>
         </div>
         <div class="field" style="margin-top: 12px;">
           <label for="loginPassword">Senha</label>
@@ -1071,7 +1110,7 @@
       </form>
 
       <div class="login-helper">
-        O usuário principal deve ser criado no Firebase Authentication com o e-mail <strong>alfafiscalto@gmail.com</strong>. A senha não fica gravada no HTML por segurança.
+        O usuário principal deve ser criado no Firebase Authentication. E-mails administrativos: <strong>alfacontabilidade2014@gmail.com</strong> e <strong>alfafiscalto@gmail.com</strong>. A senha não fica gravada no HTML por segurança.
       </div>
     </div>
   </section>
@@ -1122,6 +1161,8 @@
         </div>
         <div class="actions">
           <button class="btn btn-secondary" id="allTasksBtn">Visão geral</button>
+          <button class="btn btn-secondary" id="exportBackupBtn" type="button" style="display:none;">Exportar backup</button>
+          <button class="btn btn-secondary" id="resetPasswordBtn" type="button">Alterar senha</button>
           <button class="btn btn-primary" id="openModalBtn">+ Novo serviço</button>
           <button class="btn btn-ghost" id="logoutBtn">Sair</button>
         </div>
@@ -1366,6 +1407,7 @@
     import {
       getAuth,
       signInWithEmailAndPassword,
+      sendPasswordResetEmail,
       onAuthStateChanged,
       signOut
     } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
@@ -1379,6 +1421,7 @@
       onSnapshot,
       serverTimestamp,
       query,
+      where,
       orderBy
     } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
     import {
@@ -1400,6 +1443,7 @@
 
     const allowedUserEmails = [
       "alfafiscalto@gmail.com",
+      "alfacontabilidade2014@gmail.com",
       "rebcaravila@gmail.com",
       "morettidavid20@gmail.com",
       "jhempreendimentos93@gmail.com",
@@ -1410,6 +1454,7 @@
 
     const userProfiles = {
       "alfafiscalto@gmail.com": { name: "Henrique", role: "Administrador", employee: null },
+      "alfacontabilidade2014@gmail.com": { name: "Henrique", role: "Administrador", employee: null },
       "rebcaravila@gmail.com": { name: "Rebeca", role: "Funcionária", employee: "Rebeca" },
       "morettidavid20@gmail.com": { name: "David", role: "Funcionário", employee: "David" },
       "jhempreendimentos93@gmail.com": { name: "Amanda", role: "Funcionária", employee: "Amanda" },
@@ -2049,27 +2094,25 @@
       return allowedUserEmails.includes(normalizeEmail(email));
     }
 
+    function isAdminUser() {
+      return currentUserProfile?.role === "Administrador";
+    }
+
+    function currentEmployeeName() {
+      return currentUserProfile?.employee || null;
+    }
+
     /*
       CONFIGURAÇÃO NECESSÁRIA NO FIREBASE
 
       1) Firebase Console > Authentication > Sign-in method > habilite Email/Password.
       2) Authentication > Users > Add user:
-         E-mail: alfafiscalto@gmail.com
+         E-mails administrativos: alfacontabilidade2014@gmail.com e alfafiscalto@gmail.com
          Senha: defina a senha principal informada pelo escritório.
       3) Firestore Database > Create database.
-      4) Regras recomendadas para liberar somente usuário logado:
-
-      rules_version = '2';
-      service cloud.firestore {
-        match /databases/{database}/documents {
-          match /tarefas/{document=**} {
-            allow read, write: if request.auth != null
-              && request.auth.token.email == 'alfafiscalto@gmail.com';
-          }
-        }
-      }
-
-      5) Copie as credenciais do app Web e substitua o objeto firebaseConfig abaixo.
+      4) Regras recomendadas: liberar somente usuários autorizados listados no sistema.
+         Cole as regras atualizadas informadas junto com este arquivo no Firestore e no Storage.
+      5) Copie as credenciais do app Web e substitua o objeto firebaseConfig abaixo somente se trocar o projeto Firebase.
     */
     const firebaseConfig = {
       apiKey: "AIzaSyCMLD4nzWvBzL7WHbQnGVl2a3sFmC7WmsY",
@@ -2326,17 +2369,92 @@
       URL.revokeObjectURL(url);
     }
 
-    function buildEmployees() {
-      const allBtn = document.createElement("button");
-      allBtn.className = "employee-btn active";
-      allBtn.dataset.employee = "todos";
-      allBtn.innerHTML = `
-        <span class="employee-name"><span class="dot" style="color: var(--red)"></span>Todos</span>
-        <span class="employee-count" id="count-todos">0</span>
-      `;
-      employeeList.appendChild(allBtn);
+    async function handlePasswordReset() {
+      if (!auth || !currentUser?.email) {
+        showToast("Faça login para solicitar alteração de senha.");
+        return;
+      }
+      try {
+        await sendPasswordResetEmail(auth, currentUser.email);
+        showToast("Enviamos um link de redefinição de senha para seu e-mail.");
+      } catch (error) {
+        console.error(error);
+        showToast("Não foi possível enviar o link de senha. Confira o Authentication no Firebase.");
+      }
+    }
 
-      employees.forEach(employee => {
+    function exportBackupJson() {
+      if (!isAdminUser()) {
+        showToast("A exportação de backup é exclusiva do administrador.");
+        return;
+      }
+      const now = new Date();
+      const timestamp = now.toISOString();
+      const backup = {
+        sistema: "Alfa Contabilidade - Sistema de Serviços",
+        versao: "1.4",
+        exportadoEm: timestamp,
+        exportadoPor: currentUser?.email || null,
+        observacao: "Backup manual gerado pelo navegador. Para backup automático real, use Firebase/Google Cloud com Cloud Functions ou Cloud Scheduler.",
+        totalTarefas: tasks.length,
+        totalClientes: clients.length,
+        tarefas: tasks,
+        clientes: clients
+      };
+      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const fileDate = timestamp.slice(0, 10);
+      a.href = url;
+      a.download = `backup-alfa-contabilidade-${fileDate}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      localStorage.setItem(`backupAlfaRealizado-${fileDate}`, timestamp);
+      showToast("Backup exportado em JSON com tarefas e clientes.");
+    }
+
+    function remindAdminBackup() {
+      if (!isAdminUser()) return;
+      const today = todayISO();
+      const key = `backupAlfaAviso-${today}`;
+      if (localStorage.getItem(key)) return;
+      localStorage.setItem(key, "1");
+      setTimeout(() => {
+        showToast("Lembrete administrativo: exporte o backup do sistema hoje para evitar perda de dados.");
+      }, 1100);
+    }
+
+    function buildEmployees() {
+      employeeList.innerHTML = "";
+      employeeInput.innerHTML = "";
+      const reportEmployeeInput = document.getElementById("reportEmployeeInput");
+      if (reportEmployeeInput) reportEmployeeInput.innerHTML = "";
+
+      const admin = isAdminUser() || !currentUserProfile;
+      const ownEmployee = currentEmployeeName();
+      const visibleEmployees = admin ? employees : employees.filter(employee => employee.name === ownEmployee);
+
+      if (admin) {
+        const allBtn = document.createElement("button");
+        allBtn.className = "employee-btn";
+        allBtn.dataset.employee = "todos";
+        allBtn.innerHTML = `
+          <span class="employee-name"><span class="dot" style="color: var(--red)"></span>Todos</span>
+          <span class="employee-count" id="count-todos">0</span>
+        `;
+        employeeList.appendChild(allBtn);
+
+        if (reportEmployeeInput) {
+          const reportAll = document.createElement("option");
+          reportAll.value = "todos";
+          reportAll.textContent = "Todos";
+          reportEmployeeInput.appendChild(reportAll);
+        }
+      }
+
+      visibleEmployees.forEach(employee => {
         const btn = document.createElement("button");
         btn.className = "employee-btn";
         btn.dataset.employee = employee.name;
@@ -2351,20 +2469,39 @@
         option.textContent = employee.name;
         employeeInput.appendChild(option);
 
-        const reportOption = document.createElement("option");
-        reportOption.value = employee.name;
-        reportOption.textContent = employee.name;
-        document.getElementById("reportEmployeeInput")?.appendChild(reportOption);
+        if (reportEmployeeInput) {
+          const reportOption = document.createElement("option");
+          reportOption.value = employee.name;
+          reportOption.textContent = employee.name;
+          reportEmployeeInput.appendChild(reportOption);
+        }
       });
 
-      employeeList.addEventListener("click", (event) => {
+      selectedEmployee = admin ? (selectedEmployee || "todos") : ownEmployee;
+      if (!selectedEmployee || (!admin && selectedEmployee !== ownEmployee)) selectedEmployee = admin ? "todos" : ownEmployee;
+
+      employeeInput.disabled = !admin;
+      if (reportEmployeeInput) {
+        reportEmployeeInput.disabled = !admin;
+        reportEmployeeInput.value = admin ? (reportEmployeeInput.value || "todos") : ownEmployee;
+      }
+
+      document.querySelectorAll(".employee-list .employee-btn").forEach(item => {
+        item.classList.toggle("active", item.dataset.employee === selectedEmployee);
+      });
+
+      employeeList.onclick = (event) => {
         const btn = event.target.closest(".employee-btn");
         if (!btn) return;
+        if (!admin && btn.dataset.employee !== ownEmployee) {
+          showToast("Seu usuário visualiza apenas os próprios serviços.");
+          return;
+        }
         selectedEmployee = btn.dataset.employee;
-        document.querySelectorAll(".employee-btn").forEach(item => item.classList.remove("active"));
+        document.querySelectorAll(".employee-list .employee-btn").forEach(item => item.classList.remove("active"));
         btn.classList.add("active");
         render();
-      });
+      };
     }
 
     function getFilteredTasks() {
@@ -2373,6 +2510,7 @@
       const priorityFilter = document.getElementById("priorityFilter").value;
 
       return tasks.filter(task => {
+        const byLoggedUser = isAdminUser() || !currentEmployeeName() || task.employee === currentEmployeeName();
         const byEmployee = selectedEmployee === "todos" || task.employee === selectedEmployee;
         const byStatus = statusFilter === "todos" || task.status === statusFilter;
         const byPriority = priorityFilter === "todas" || task.priority === priorityFilter;
@@ -2381,7 +2519,7 @@
           .join(" ")
           .toLowerCase();
         const bySearch = !searchTerm || text.includes(searchTerm);
-        return byEmployee && byStatus && byPriority && bySearch;
+        return byLoggedUser && byEmployee && byStatus && byPriority && bySearch;
       });
     }
 
@@ -2405,7 +2543,8 @@
       document.getElementById("countAndamento").textContent = andamento;
       document.getElementById("countConcluido").textContent = concluido;
 
-      document.getElementById("count-todos").textContent = tasks.length;
+      const countTodosEl = document.getElementById("count-todos");
+      if (countTodosEl) countTodosEl.textContent = tasks.length;
       employees.forEach(employee => {
         const el = document.getElementById(`count-${employee.name}`);
         if (el) el.textContent = tasks.filter(task => task.employee === employee.name && task.status !== "concluido").length;
@@ -2512,7 +2651,9 @@
       modalTitle.textContent = task ? "Editar serviço" : "Novo serviço";
       document.getElementById("taskId").value = task?.id || "";
       const defaultEmployee = currentUserProfile?.employee || employees[0].name;
-      employeeInput.value = task?.employee || (selectedEmployee === "todos" ? defaultEmployee : selectedEmployee);
+      employeeInput.value = currentEmployeeName() || task?.employee || (selectedEmployee === "todos" ? defaultEmployee : selectedEmployee);
+      if (isAdminUser()) employeeInput.value = task?.employee || (selectedEmployee === "todos" ? defaultEmployee : selectedEmployee);
+      employeeInput.disabled = !isAdminUser();
       document.getElementById("requestDateInput").value = task?.requestDate || todayISO();
       document.getElementById("deadlineInput").value = task?.deadline || todayISO();
       document.getElementById("clientInput").value = task ? clientLabel({ alias: task.clientAlias, name: task.clientName, document: task.clientDocument }) : "";
@@ -2581,7 +2722,7 @@
 
       const selectedClient = parseClientInput(document.getElementById("clientInput").value);
       const payload = {
-        employee: employeeInput.value,
+        employee: isAdminUser() ? employeeInput.value : currentEmployeeName(),
         clientAlias: selectedClient.alias,
         clientName: selectedClient.name,
         clientDocument: selectedClient.document,
@@ -2717,11 +2858,16 @@
       currentUser = user;
       currentUserProfile = userProfiles[normalizeEmail(user.email)] || { name: user.email, role: "Usuário autorizado", employee: null };
       currentUserEmail.innerHTML = `${escapeHTML(currentUserProfile.name)}<br><small>${escapeHTML(user.email)} · ${escapeHTML(currentUserProfile.role)}</small>`;
+      selectedEmployee = isAdminUser() ? "todos" : currentEmployeeName();
+      buildEmployees();
+      document.getElementById("allTasksBtn").style.display = isAdminUser() ? "inline-flex" : "none";
+      document.getElementById("exportBackupBtn").style.display = isAdminUser() ? "inline-flex" : "none";
       loginScreen.style.display = "none";
       appShell.classList.add("visible");
       setConnection("online", "Conectado ao Firebase");
       listenTasks();
       listenClients();
+      remindAdminBackup();
     }
 
     function showLogin() {
@@ -2734,20 +2880,34 @@
       if (unsubscribeClients) unsubscribeClients();
       tasks = [];
       clients = initialClients.map(client => ({ ...client, source: "planilha" }));
+      selectedEmployee = "todos";
+      buildEmployees();
+      document.getElementById("allTasksBtn").style.display = "inline-flex";
+      document.getElementById("exportBackupBtn").style.display = "none";
       render();
       renderClients();
     }
 
     function listenTasks() {
       if (unsubscribe) unsubscribe();
-      const tasksQuery = query(collection(db, "tarefas"), orderBy("createdAt", "desc"));
+      const baseCollection = collection(db, "tarefas");
+      const tasksQuery = isAdminUser()
+        ? query(baseCollection, orderBy("createdAt", "desc"))
+        : query(baseCollection, where("employee", "==", currentEmployeeName()));
+
       unsubscribe = onSnapshot(tasksQuery, (snapshot) => {
-        tasks = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+        tasks = snapshot.docs
+          .map(docSnap => ({ id: docSnap.id, ...docSnap.data() }))
+          .sort((a, b) => {
+            const aTime = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
+            const bTime = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
+            return bTime - aTime;
+          });
         render();
       }, (error) => {
         console.error(error);
         setConnection("offline", "Erro ao carregar dados");
-        showToast("Erro ao ouvir o Firestore. Verifique as regras do banco de dados.");
+        showToast("Erro ao ouvir o Firestore. Verifique as regras do banco de dados e os e-mails autorizados.");
       });
     }
 
@@ -2810,12 +2970,20 @@
 
     document.getElementById("loginForm").addEventListener("submit", handleLogin);
     document.getElementById("logoutBtn").addEventListener("click", handleLogout);
+    document.getElementById("resetPasswordBtn").addEventListener("click", handlePasswordReset);
+    document.getElementById("exportBackupBtn").addEventListener("click", exportBackupJson);
     document.getElementById("openModalBtn").addEventListener("click", () => openModal());
     document.getElementById("closeModalBtn").addEventListener("click", closeModal);
     document.getElementById("cancelBtn").addEventListener("click", closeModal);
     document.getElementById("allTasksBtn").addEventListener("click", () => {
+      if (!isAdminUser()) {
+        selectedEmployee = currentEmployeeName();
+        showToast("Seu usuário visualiza apenas os próprios serviços.");
+        render();
+        return;
+      }
       selectedEmployee = "todos";
-      document.querySelectorAll(".employee-btn").forEach(item => item.classList.toggle("active", item.dataset.employee === "todos"));
+      document.querySelectorAll(".employee-list .employee-btn").forEach(item => item.classList.toggle("active", item.dataset.employee === "todos"));
       render();
     });
     document.getElementById("searchInput").addEventListener("input", debouncedRender);
