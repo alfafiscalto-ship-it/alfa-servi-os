@@ -1269,7 +1269,7 @@
         <div class="client-grid">
           <div class="field">
             <label for="clientAliasInput">Apelido</label>
-            <input id="clientAliasInput" placeholder="Ex.: ELETROSILOS" />
+            <input id="clientAliasInput" placeholder="Ex.: NOME RESUMIDO DO CLIENTE" />
           </div>
           <div class="field">
             <label for="clientNameInput">Razão social / Nome</label>
@@ -1423,7 +1423,7 @@
 
       <div class="field">
         <label for="clientImportTextarea">JSON dos clientes</label>
-        <textarea id="clientImportTextarea" placeholder='Cole aqui um JSON no formato: [{"alias":"CLIENTE", "name":"RAZÃO SOCIAL", "document":"00.000.000/0000-00"}]'></textarea>
+        <textarea id="clientImportTextarea" placeholder='Cole aqui uma lista JSON de clientes. Cada item deve conter alias, name e document.'></textarea>
       </div>
 
       <div class="config-box">
@@ -1496,9 +1496,8 @@
       "julyanarocha@unitins.br": { name: "Julyana", role: "Funcionária", employee: "Julyana" }
     };
 
-    // Os clientes não ficam mais gravados dentro do HTML.
-    // Use o módulo Clientes > Importar clientes para enviar um JSON para a coleção "clientes" do Firestore.
-    const initialClients = [];
+    // Os clientes são carregados exclusivamente da coleção "clientes" do Firestore.
+    // Não há lista fixa de clientes neste HTML.
 
     function normalizeEmail(email) {
       return String(email || "").trim().toLowerCase();
