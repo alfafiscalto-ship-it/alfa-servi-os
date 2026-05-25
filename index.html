@@ -1176,6 +1176,8 @@
         <div class="actions">
           <button class="btn btn-secondary" id="allTasksBtn">Visão geral</button>
           <button class="btn btn-secondary" id="exportBackupBtn" type="button" style="display:none;">Exportar backup</button>
+          <button class="btn btn-secondary" id="importBackupBtn" type="button" style="display:none;">Importar backup</button>
+          <input type="file" id="importBackupInput" accept="application/json,.json" style="display:none;" />
           <button class="btn btn-secondary" id="resetPasswordBtn" type="button">Alterar senha</button>
           <button class="btn btn-primary" id="openModalBtn">+ Novo serviço</button>
           <button class="btn btn-ghost" id="logoutBtn">Sair</button>
@@ -1403,10 +1405,6 @@
             <label for="observationInput">Observação</label>
             <input type="text" id="observationInput" placeholder="Ex.: cliente aguardando, urgente, conferir com chefe..." />
           </div>
-          <div class="field full">
-            <label for="attachmentsInput">Anexos</label>
-            <input type="file" id="attachmentsInput" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.xml,.txt" />
-          </div>
         </div>
         <div class="actions" style="margin-top: 16px;">
           <button type="button" class="btn btn-secondary" id="cancelBtn">Cancelar</button>
@@ -1437,16 +1435,8 @@
       doc,
       onSnapshot,
       serverTimestamp,
-      query,
-      where,
-      orderBy
+      Timestamp
     } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
-    import {
-      getStorage,
-      ref as storageRef,
-      uploadBytesResumable,
-      getDownloadURL
-    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js";
 
     const employees = [
       { name: "Henrique", color: "#ef4444" },
@@ -1473,7 +1463,7 @@
       "alfafiscalto@gmail.com": { name: "Henrique", role: "Administrador", employee: null },
       "alfacontabilidade2014@gmail.com": { name: "Henrique", role: "Administrador", employee: null },
       "rebcaravila@gmail.com": { name: "Rebeca", role: "Funcionária", employee: "Rebeca" },
-      "morettidavid20@gmail.com": { name: "David", role: "Funcionário", employee: "David" },
+      "morettidavid20@gmail.com": { name: "David", role: "Administrador", employee: null },
       "jhempreendimentos93@gmail.com": { name: "Amanda", role: "Funcionária", employee: "Amanda" },
       "flaviarodriguessoltu92@gmail.com": { name: "Flavia", role: "Funcionária", employee: "Flavia" },
       "joycealmeidabrito01@gmail.com": { name: "Joyce", role: "Funcionária", employee: "Joyce" },
@@ -2128,7 +2118,7 @@
          Senha: defina a senha principal informada pelo escritório.
       3) Firestore Database > Create database.
       4) Regras recomendadas: liberar somente usuários autorizados listados no sistema.
-         Cole as regras atualizadas informadas junto com este arquivo no Firestore e no Storage.
+         Cole as regras atualizadas informadas junto com este arquivo no Firestore.
       5) Copie as credenciais do app Web e substitua o objeto firebaseConfig abaixo somente se trocar o projeto Firebase.
     */
     const firebaseConfig = {
@@ -2143,7 +2133,6 @@
     let app = null;
     let auth = null;
     let db = null;
-    let storage = null;
     let unsubscribe = null;
     let unsubscribeClients = null;
     let tasks = [];
@@ -2460,6 +2449,78 @@
       showToast("Backup exportado em JSON com tarefas e clientes.");
     }
 
+
+    function normalizeBackupTimestamp(value) {
+      if (!value) return null;
+      if (value?.toMillis) return value;
+      if (typeof value === "string") {
+        const parsed = Date.parse(value);
+        return Number.isNaN(parsed) ? null : Timestamp.fromMillis(parsed);
+      }
+      if (typeof value.seconds === "number") {
+        return Timestamp.fromMillis((value.seconds * 1000) + Math.floor((value.nanoseconds || 0) / 1000000));
+      }
+      return null;
+    }
+
+    function cleanBackupRecord(record, fallbackUserEmail) {
+      const cleaned = { ...record };
+      delete cleaned.id;
+      delete cleaned.source;
+      ["createdAt", "updatedAt"].forEach(field => {
+        const normalized = normalizeBackupTimestamp(cleaned[field]);
+        if (normalized) cleaned[field] = normalized;
+        else if (field in cleaned) delete cleaned[field];
+      });
+      cleaned.restoredAt = serverTimestamp();
+      cleaned.restoredBy = fallbackUserEmail || null;
+      return cleaned;
+    }
+
+    async function importBackupJsonFile(file) {
+      if (!isAdminUser()) {
+        showToast("A importação de backup é exclusiva do administrador.");
+        return;
+      }
+      if (!file) return;
+
+      const text = await file.text();
+      let backup;
+      try {
+        backup = JSON.parse(text);
+      } catch (error) {
+        showToast("Arquivo inválido. Selecione um backup JSON exportado pelo sistema.");
+        return;
+      }
+
+      const backupTasks = Array.isArray(backup.tarefas) ? backup.tarefas : [];
+      const backupClients = Array.isArray(backup.clientes) ? backup.clientes : [];
+      if (!backupTasks.length && !backupClients.length) {
+        showToast("O backup não possui tarefas nem clientes para importar.");
+        return;
+      }
+
+      const confirmImport = confirm(`Importar backup com ${backupTasks.length} tarefa(s) e ${backupClients.length} cliente(s)? Registros com o mesmo ID serão atualizados.`);
+      if (!confirmImport) return;
+
+      try {
+        for (const item of backupTasks) {
+          const cleaned = cleanBackupRecord(item, currentUser?.email);
+          if (item.id) await setDoc(doc(db, "tarefas", item.id), cleaned, { merge: true });
+          else await addDoc(collection(db, "tarefas"), cleaned);
+        }
+        for (const item of backupClients) {
+          const cleaned = cleanBackupRecord(item, currentUser?.email);
+          if (item.id) await setDoc(doc(db, "clientes", item.id), cleaned, { merge: true });
+          else await addDoc(collection(db, "clientes"), cleaned);
+        }
+        showToast("Backup importado com sucesso.");
+      } catch (error) {
+        console.error(error);
+        showToast(error?.message || "Não foi possível importar o backup. Confira as regras do Firestore.");
+      }
+    }
+
     function remindAdminBackup() {
       if (!isAdminUser()) return;
       const today = todayISO();
@@ -2480,6 +2541,13 @@
       const admin = isAdminUser() || !currentUserProfile;
       const ownEmployee = currentEmployeeName();
       const visibleEmployees = admin ? employees : employees.filter(employee => employee.name === ownEmployee);
+
+      employees.forEach(employee => {
+        const option = document.createElement("option");
+        option.value = employee.name;
+        option.textContent = employee.name;
+        employeeInput.appendChild(option);
+      });
 
       if (admin) {
         const allBtn = document.createElement("button");
@@ -2509,11 +2577,6 @@
         `;
         employeeList.appendChild(btn);
 
-        const option = document.createElement("option");
-        option.value = employee.name;
-        option.textContent = employee.name;
-        employeeInput.appendChild(option);
-
         if (reportEmployeeInput) {
           const reportOption = document.createElement("option");
           reportOption.value = employee.name;
@@ -2525,7 +2588,7 @@
       selectedEmployee = admin ? (selectedEmployee || "todos") : ownEmployee;
       if (!selectedEmployee || (!admin && selectedEmployee !== ownEmployee)) selectedEmployee = admin ? "todos" : ownEmployee;
 
-      employeeInput.disabled = !admin;
+      employeeInput.disabled = false;
       if (reportEmployeeInput) {
         reportEmployeeInput.disabled = !admin;
         reportEmployeeInput.value = admin ? (reportEmployeeInput.value || "todos") : ownEmployee;
@@ -2613,7 +2676,6 @@
       const overdue = isOverdue(task);
       const oldRequest = task.requestDate && task.requestDate < todayISO();
       const dueToday = task.deadline && task.status !== "concluido" && task.deadline === todayISO();
-      const attachments = Array.isArray(task.attachments) ? task.attachments : [];
       const nextActionLabel = task.status === "pendente" ? "Iniciar" : task.status === "andamento" ? "Concluir" : "Reabrir";
       const nextActionClass = task.status === "pendente" ? "btn-start" : task.status === "andamento" ? "btn-finish" : "btn-reopen";
       const dueClass = overdue ? "visual-vencido" : dueToday ? "visual-hoje" : task.status === "concluido" ? "visual-ok" : "";
@@ -2638,17 +2700,7 @@
           ${dueToday ? `<span class="pill visual-hoje">⚠️ Vence hoje</span>` : ""}
           ${oldRequest ? `<span class="pill priority-media">Pedido anterior a hoje</span>` : ""}
           ${task.observation ? `<span class="pill">📝 ${escapeHTML(task.observation)}</span>` : ""}
-          ${attachments.length ? `<span class="pill">📎 ${attachments.length} anexo(s)</span>` : ""}
         </div>
-        ${attachments.length ? `
-          <div class="attachment-list">
-            ${attachments.map(file => `
-              <a class="attachment-link" href="${escapeHTML(file.url)}" target="_blank" rel="noopener">
-                📎 ${escapeHTML(file.name || "Anexo")}
-              </a>
-            `).join("")}
-          </div>
-        ` : ""}
         <div class="task-actions">
           <button class="icon-btn" data-action="edit" data-id="${task.id}">Editar</button>
           <button class="icon-btn ${nextActionClass}" data-action="next" data-id="${task.id}">${nextActionLabel}</button>
@@ -2698,7 +2750,7 @@
       const defaultEmployee = currentUserProfile?.employee || employees[0].name;
       employeeInput.value = currentEmployeeName() || task?.employee || (selectedEmployee === "todos" ? defaultEmployee : selectedEmployee);
       if (isAdminUser()) employeeInput.value = task?.employee || (selectedEmployee === "todos" ? defaultEmployee : selectedEmployee);
-      employeeInput.disabled = !isAdminUser();
+      employeeInput.disabled = false;
       document.getElementById("requestDateInput").value = task?.requestDate || todayISO();
       document.getElementById("deadlineInput").value = task?.deadline || todayISO();
       document.getElementById("clientInput").value = task ? clientLabel({ alias: task.clientAlias, name: task.clientName, document: task.clientDocument }) : "";
@@ -2730,126 +2782,14 @@
 
 
 
-    function getSelectedAttachmentFiles() {
-      const input = document.getElementById("attachmentsInput");
-      return Array.from(input?.files || []);
-    }
-
-    function makeSafeFileName(fileName) {
-      const cleanName = String(fileName || "arquivo")
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .replace(/[^a-zA-Z0-9._-]+/g, "-")
-        .replace(/-+/g, "-")
-        .replace(/^-|-$/g, "");
-      return cleanName || `arquivo-${Date.now()}`;
-    }
-
-    function uniqueId() {
-      if (window.crypto && typeof window.crypto.randomUUID === "function") {
-        return window.crypto.randomUUID();
-      }
-      return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    }
-
-    function explainFirebaseUploadError(error) {
-      const code = error?.code || "";
-      if (code.includes("storage/unauthorized")) {
-        return "O anexo foi bloqueado pelas regras do Firebase Storage. Publique as regras do Storage com os e-mails autorizados.";
-      }
-      if (code.includes("storage/unauthenticated")) {
-        return "O Firebase Storage não reconheceu o login. Saia, entre novamente e tente anexar de novo.";
-      }
-      if (code.includes("storage/bucket-not-found")) {
-        return "O bucket do Firebase Storage não foi encontrado. Confira se o Storage está ativado no Firebase.";
-      }
-      if (code.includes("storage/retry-limit-exceeded")) {
-        return "O envio demorou demais e o Firebase interrompeu a tentativa. Tente novamente com internet estável ou arquivo menor.";
-      }
-      if (code.includes("storage/quota-exceeded")) {
-        return "A cota do Firebase Storage foi excedida. Verifique o plano/cota no Firebase.";
-      }
-      if (code.includes("storage/canceled")) {
-        return "O envio do anexo foi cancelado antes de terminar.";
-      }
-      return `Falha ao anexar arquivo: ${error?.message || "erro desconhecido no Firebase Storage"}`;
-    }
-
-    function uploadFileWithProgress(fileRef, file, metadata, onProgress) {
-      return new Promise((resolve, reject) => {
-        const uploadTask = uploadBytesResumable(fileRef, file, metadata);
-        const timeout = window.setTimeout(() => {
-          try { uploadTask.cancel(); } catch (_) {}
-          reject(new Error("O envio do anexo passou de 3 minutos e foi interrompido. Teste com arquivo menor e confira o Firebase Storage."));
-        }, 180000);
-
-        uploadTask.on("state_changed",
-          (snapshot) => {
-            const percent = snapshot.totalBytes ? Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100) : 0;
-            if (onProgress) onProgress(percent);
-          },
-          (error) => {
-            window.clearTimeout(timeout);
-            reject(error);
-          },
-          () => {
-            window.clearTimeout(timeout);
-            resolve(uploadTask.snapshot);
-          }
-        );
-      });
-    }
-
-    async function uploadTaskAttachments(taskId, files = getSelectedAttachmentFiles(), submitButton = null) {
-      if (!files.length) return [];
-      if (!storage) throw new Error("Storage não configurado.");
-      if (!currentUser?.email) throw new Error("Usuário não identificado para enviar anexos.");
-
-      const uploaded = [];
-      for (let index = 0; index < files.length; index += 1) {
-        const file = files[index];
-        const safeName = makeSafeFileName(file.name);
-        const uniqueName = `${Date.now()}-${uniqueId()}-${safeName}`;
-        const path = `tarefas/${taskId}/${uniqueName}`;
-        const fileRef = storageRef(storage, path);
-
-        try {
-          if (submitButton) submitButton.textContent = `Enviando anexo ${index + 1}/${files.length}...`;
-          await uploadFileWithProgress(fileRef, file, {
-            contentType: file.type || "application/octet-stream",
-            customMetadata: {
-              uploadedBy: currentUser.email,
-              originalName: file.name,
-              taskId
-            }
-          }, (percent) => {
-            if (submitButton) submitButton.textContent = `Enviando anexo ${index + 1}/${files.length}... ${percent}%`;
-          });
-
-          const url = await getDownloadURL(fileRef);
-          uploaded.push({
-            name: file.name,
-            url,
-            path,
-            type: file.type || "application/octet-stream",
-            size: file.size,
-            uploadedAt: new Date().toISOString(),
-            uploadedBy: currentUser.email
-          });
-        } catch (error) {
-          console.error("Erro ao enviar anexo para o Firebase Storage:", error);
-          throw new Error(explainFirebaseUploadError(error));
-        }
-      }
-      return uploaded;
-    }
+    
 
     async function saveTask(event) {
       event.preventDefault();
 
       const selectedClient = parseClientInput(document.getElementById("clientInput").value);
       const payload = {
-        employee: isAdminUser() ? employeeInput.value : currentEmployeeName(),
+        employee: employeeInput.value,
         clientAlias: selectedClient.alias,
         clientName: selectedClient.name,
         clientDocument: selectedClient.document,
@@ -2884,41 +2824,31 @@
         return;
       }
 
-      const selectedFiles = getSelectedAttachmentFiles();
       const submitButton = taskForm.querySelector('button[type="submit"]');
       const originalSubmitText = submitButton?.textContent || "Salvar serviço";
 
       try {
         if (submitButton) {
           submitButton.disabled = true;
-          submitButton.textContent = selectedFiles.length ? "Enviando anexos..." : "Salvando...";
+          submitButton.textContent = editingTaskId ? "Atualizando serviço..." : "Salvando serviço...";
         }
 
         if (editingTaskId) {
-          const previousTask = tasks.find(item => item.id === editingTaskId);
-          const newAttachments = await uploadTaskAttachments(editingTaskId, selectedFiles, submitButton);
-          if (submitButton) submitButton.textContent = "Atualizando serviço...";
-          await updateDoc(doc(db, "tarefas", editingTaskId), {
-            ...payload,
-            attachments: [...(previousTask?.attachments || []), ...newAttachments]
-          });
-          showToast(newAttachments.length ? "Serviço atualizado com anexo(s)." : "Serviço atualizado com sucesso.");
+          await updateDoc(doc(db, "tarefas", editingTaskId), payload);
+          showToast("Serviço atualizado com sucesso.");
         } else {
           const newDocRef = doc(collection(db, "tarefas"));
-          const newAttachments = await uploadTaskAttachments(newDocRef.id, selectedFiles, submitButton);
-          if (submitButton) submitButton.textContent = "Gravando serviço...";
           await setDoc(newDocRef, {
             ...payload,
-            attachments: newAttachments,
             createdAt: serverTimestamp(),
             createdBy: currentUser.email
           });
-          showToast(newAttachments.length ? "Serviço criado com anexo(s)." : "Serviço criado com sucesso.");
+          showToast("Serviço criado com sucesso.");
         }
         closeModal();
       } catch (error) {
         console.error(error);
-        showToast(error?.message || "Não foi possível salvar. Confira as regras do Firestore/Storage e a configuração Firebase.");
+        showToast(error?.message || "Não foi possível salvar. Confira as regras do Firestore e a configuração Firebase.");
       } finally {
         if (submitButton) {
           submitButton.disabled = false;
@@ -3003,6 +2933,7 @@
       buildEmployees();
       document.getElementById("allTasksBtn").style.display = isAdminUser() ? "inline-flex" : "none";
       document.getElementById("exportBackupBtn").style.display = isAdminUser() ? "inline-flex" : "none";
+      document.getElementById("importBackupBtn").style.display = isAdminUser() ? "inline-flex" : "none";
       loginScreen.style.display = "none";
       appShell.classList.add("visible");
       setConnection("online", "Conectado ao Firebase");
@@ -3025,18 +2956,14 @@
       buildEmployees();
       document.getElementById("allTasksBtn").style.display = "inline-flex";
       document.getElementById("exportBackupBtn").style.display = "none";
+      document.getElementById("importBackupBtn").style.display = "none";
       render();
       renderClients();
     }
 
     function listenTasks() {
       if (unsubscribe) unsubscribe();
-      const baseCollection = collection(db, "tarefas");
-      const tasksQuery = isAdminUser()
-        ? query(baseCollection, orderBy("createdAt", "desc"))
-        : query(baseCollection, where("employee", "==", currentEmployeeName()));
-
-      unsubscribe = onSnapshot(tasksQuery, (snapshot) => {
+      unsubscribe = onSnapshot(collection(db, "tarefas"), (snapshot) => {
         tasks = snapshot.docs
           .map(docSnap => ({ id: docSnap.id, ...docSnap.data() }))
           .sort((a, b) => {
@@ -3079,7 +3006,6 @@
         app = initializeApp(firebaseConfig);
         auth = getAuth(app);
         db = getFirestore(app);
-        storage = getStorage(app);
         firebaseReady = true;
         firebaseWarning.style.display = "none";
         setConnection("online", "Firebase pronto para login");
@@ -3113,6 +3039,11 @@
     document.getElementById("logoutBtn").addEventListener("click", handleLogout);
     document.getElementById("resetPasswordBtn").addEventListener("click", handlePasswordReset);
     document.getElementById("exportBackupBtn").addEventListener("click", exportBackupJson);
+    document.getElementById("importBackupBtn").addEventListener("click", () => document.getElementById("importBackupInput").click());
+    document.getElementById("importBackupInput").addEventListener("change", async (event) => {
+      await importBackupJsonFile(event.target.files?.[0]);
+      event.target.value = "";
+    });
     document.getElementById("openModalBtn").addEventListener("click", () => {
       try { openModal(); } catch (error) { console.error(error); showToast("Erro ao abrir Novo serviço. Use Ctrl + F5 e tente novamente."); }
     });
