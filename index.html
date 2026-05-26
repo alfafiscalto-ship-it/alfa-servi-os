@@ -1071,6 +1071,70 @@
       white-space: nowrap;
     }
 
+
+
+    .employee-multi-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      width: 100%;
+    }
+
+    .employee-check {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 48px;
+      padding: 12px 13px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: rgba(255,255,255,0.055);
+      color: var(--text);
+      cursor: pointer;
+      transition: 180ms ease;
+      text-transform: none;
+      letter-spacing: normal;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .employee-check:hover,
+    .employee-check:has(input:checked) {
+      background: rgba(255,255,255,0.105);
+      border-color: var(--border-strong);
+      transform: translateY(-1px);
+    }
+
+    .employee-check input {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--red);
+      flex: 0 0 auto;
+    }
+
+    .employee-check input:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
+
+    .employee-check:has(input:disabled) {
+      cursor: not-allowed;
+      opacity: 0.72;
+    }
+
+    .employee-check-name {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .employee-check-name span:last-child {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
     @media (max-width: 900px) {
       .client-grid,
       .report-grid,
@@ -1120,6 +1184,7 @@
       }
       .stats { grid-template-columns: 1fr; }
       .form-grid { grid-template-columns: 1fr; }
+      .employee-multi-grid { grid-template-columns: 1fr; }
     }
   
 
@@ -1210,7 +1275,7 @@
 <body>
   <section class="login-screen" id="loginScreen">
     <div class="login-version-badge">
-      <strong>Versão 1.5.</strong>
+      <strong>Versão 1.5.2</strong>
       <span>Sistema criado por David Moretti Ferreira.</span>
     </div>
     <div class="login-card">
@@ -1475,9 +1540,10 @@
       <form id="taskForm">
         <input type="hidden" id="taskId" />
         <div class="form-grid">
-          <div class="field">
-            <label for="employeeInput">Funcionário</label>
-            <select id="employeeInput" required></select>
+          <div class="field full">
+            <label for="employeeInput">Funcionário(s)</label>
+            <div id="employeeInput" class="employee-multi-grid" role="group" aria-label="Selecionar um ou mais funcionários"></div>
+            <small class="doc-hint">Marque uma ou mais pessoas responsáveis por este serviço.</small>
           </div>
           <div class="field">
             <label for="requestDateInput">Data do pedido</label>
@@ -2275,7 +2341,7 @@
       const clientInput = document.getElementById("reportClientInput").value.trim().toLowerCase();
       currentReportRows = tasks.filter(task => {
         const byMonth = monthValue(task.requestDate) === month;
-        const byEmployee = employee === "todos" || task.employee === employee;
+        const byEmployee = employee === "todos" || taskHasEmployee(task, employee);
         const clientText = [task.clientAlias, task.clientName, task.clientDocument].join(" ").toLowerCase();
         const byClient = !clientInput || clientText.includes(clientInput) || clientLabel(parseClientInput(clientInput)).toLowerCase().includes(clientInput);
         return byMonth && byEmployee && byClient;
@@ -2296,7 +2362,7 @@
           <td>${formatDate(task.requestDate)}</td>
           <td>${escapeHTML(task.clientAlias || task.clientName || "-")}</td>
           <td><strong>${escapeHTML(task.serviceType || "-")}</strong><br><span style="color: var(--muted)">${escapeHTML(task.description || "")}</span></td>
-          <td>${escapeHTML(task.employee || "-")}</td>
+          <td>${escapeHTML(getTaskAssigneeText(task))}</td>
           <td>${escapeHTML(statusLabels[task.status] || task.status || "-")}</td>
           <td>${formatDate(task.deadline)}</td>
           <td>${escapeHTML(priorityLabels[task.priority] || task.priority || "-")}</td>
@@ -2312,7 +2378,7 @@
       const rows = [["Data", "Cliente", "Documento", "Serviço", "Funcionário", "Status", "Prazo", "Prioridade"]];
       currentReportRows.forEach(task => rows.push([
         formatDate(task.requestDate), task.clientAlias || task.clientName || "", task.clientDocument || "", task.serviceType || "",
-        task.employee || "", statusLabels[task.status] || task.status || "", formatDate(task.deadline), priorityLabels[task.priority] || task.priority || ""
+        getTaskAssigneeText(task), statusLabels[task.status] || task.status || "", formatDate(task.deadline), priorityLabels[task.priority] || task.priority || ""
       ]));
       const csv = rows.map(row => row.map(value => `"${String(value).replaceAll('"', '""')}"`).join(";")).join("\n");
       const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
@@ -2349,7 +2415,7 @@
       const timestamp = now.toISOString();
       const backup = {
         sistema: "Alfa Contabilidade - Sistema de Serviços",
-        versao: "1.5",
+        versao: "1.5.2",
         exportadoEm: timestamp,
         exportadoPor: currentUser?.email || null,
         observacao: "Backup manual gerado pelo navegador. Para backup automático real, use Firebase/Google Cloud com Cloud Functions ou Cloud Scheduler.",
@@ -2464,9 +2530,44 @@
       return employeeName === "todos" ? "Todos" : employeeName;
     }
 
+    function getTaskAssignees(task) {
+      const names = Array.isArray(task?.assignees) && task.assignees.length
+        ? task.assignees
+        : (task?.employee ? [task.employee] : []);
+
+      return [...new Set(names
+        .map(name => String(name || "").trim())
+        .filter(name => employees.some(employee => employee.name === name)))];
+    }
+
+    function taskHasEmployee(task, employeeName) {
+      return getTaskAssignees(task).includes(employeeName);
+    }
+
+    function getTaskAssigneeText(task) {
+      const names = getTaskAssignees(task);
+      if (!names.length) return "-";
+      if (names.length === 1) return names[0];
+      if (names.length === 2) return `${names[0]} e ${names[1]}`;
+      return `${names.slice(0, -1).join(", ")} e ${names[names.length - 1]}`;
+    }
+
+    function getSelectedTaskEmployees() {
+      return Array.from(document.querySelectorAll('input[name="taskEmployees"]:checked'))
+        .map(input => input.value)
+        .filter(Boolean);
+    }
+
+    function setSelectedTaskEmployees(names = []) {
+      const selectedNames = new Set(names);
+      document.querySelectorAll('input[name="taskEmployees"]').forEach(input => {
+        input.checked = selectedNames.has(input.value);
+      });
+    }
+
     function getEmployeeOpenCount(employeeName) {
       if (employeeName === "todos") return tasks.length;
-      return tasks.filter(task => task.employee === employeeName && task.status !== "concluido").length;
+      return tasks.filter(task => taskHasEmployee(task, employeeName) && task.status !== "concluido").length;
     }
 
     function updateEmployeeSelector() {
@@ -2541,10 +2642,18 @@
       const ownEmployee = currentEmployeeName();
 
       employees.forEach(employee => {
-        const option = document.createElement("option");
-        option.value = employee.name;
-        option.textContent = employee.name;
-        employeeInput.appendChild(option);
+        const label = document.createElement("label");
+        label.className = "employee-check";
+        label.innerHTML = `
+          <input type="checkbox" name="taskEmployees" value="${escapeHTML(employee.name)}">
+          <span class="employee-check-name">
+            <span class="dot" style="color:${escapeHTML(employee.color)}"></span>
+            <span>${escapeHTML(employee.name)}</span>
+          </span>
+        `;
+        const checkbox = label.querySelector("input");
+        checkbox.disabled = !admin && employee.name !== ownEmployee;
+        employeeInput.appendChild(label);
       });
 
       if (reportEmployeeInput) {
@@ -2569,7 +2678,6 @@
       selectedEmployee = admin ? (selectedEmployee || "todos") : ownEmployee;
       if (!selectedEmployee || (!admin && selectedEmployee !== ownEmployee)) selectedEmployee = admin ? "todos" : ownEmployee;
 
-      employeeInput.disabled = false;
       updateEmployeeSelector();
     }
 
@@ -2579,11 +2687,12 @@
       const priorityFilter = document.getElementById("priorityFilter").value;
 
       return tasks.filter(task => {
-        const byLoggedUser = isAdminUser() || !currentEmployeeName() || task.employee === currentEmployeeName();
-        const byEmployee = selectedEmployee === "todos" || task.employee === selectedEmployee;
+        const assigneeText = getTaskAssigneeText(task);
+        const byLoggedUser = isAdminUser() || !currentEmployeeName() || taskHasEmployee(task, currentEmployeeName());
+        const byEmployee = selectedEmployee === "todos" || taskHasEmployee(task, selectedEmployee);
         const byStatus = statusFilter === "todos" || task.status === statusFilter;
         const byPriority = priorityFilter === "todas" || task.priority === priorityFilter;
-        const text = [task.employee, task.clientAlias, task.clientName, task.clientDocument, task.serviceType, task.description, task.observation, task.status, task.priority]
+        const text = [assigneeText, task.clientAlias, task.clientName, task.clientDocument, task.serviceType, task.description, task.observation, task.status, task.priority]
           .filter(Boolean)
           .join(" ")
           .toLowerCase();
@@ -2636,9 +2745,12 @@
       const nextActionLabel = task.status === "pendente" ? "Iniciar" : task.status === "andamento" ? "Concluir" : "Reabrir";
       const nextActionClass = task.status === "pendente" ? "btn-start" : task.status === "andamento" ? "btn-finish" : "btn-reopen";
       const dueClass = overdue ? "visual-vencido" : dueToday ? "visual-hoje" : task.status === "concluido" ? "visual-ok" : "";
+      const assignees = getTaskAssignees(task);
+      const mainEmployee = assignees[0] || task.employee || "";
+      const assigneeText = getTaskAssigneeText(task);
 
       card.className = `task-card ${overdue ? "overdue" : ""}`;
-      card.style.borderTop = `3px solid ${employees.find(e => e.name === task.employee)?.color || "var(--red)"}`;
+      card.style.borderTop = `3px solid ${employees.find(e => e.name === mainEmployee)?.color || "var(--red)"}`;
 
       card.innerHTML = `
         <div class="task-top">
@@ -2649,7 +2761,7 @@
         <div class="pill-row">
           ${task.clientAlias || task.clientName ? `<span class="pill">🏢 ${escapeHTML(task.clientAlias || task.clientName)}</span>` : ""}
           ${task.clientDocument ? `<span class="pill">🧾 ${escapeHTML(task.clientDocument)}</span>` : ""}
-          <span class="pill">👤 ${escapeHTML(task.employee)}</span>
+          <span class="pill">👥 ${escapeHTML(assigneeText)}</span>
           <span class="pill">📅 Pedido: ${formatDate(task.requestDate)}</span>
           <span class="pill ${dueClass}">⏳ Prazo limite: ${formatDate(task.deadline)}</span>
           <span class="pill ${task.status === "concluido" ? "success-pill" : ""}">📌 ${statusLabels[task.status] || "Pendente"}</span>
@@ -2704,10 +2816,22 @@
       editingTaskId = task?.id || null;
       modalTitle.textContent = task ? "Editar serviço" : "Novo serviço";
       document.getElementById("taskId").value = task?.id || "";
+
       const defaultEmployee = currentUserProfile?.employee || employees[0].name;
-      employeeInput.value = currentEmployeeName() || task?.employee || (selectedEmployee === "todos" ? defaultEmployee : selectedEmployee);
-      if (isAdminUser()) employeeInput.value = task?.employee || (selectedEmployee === "todos" ? defaultEmployee : selectedEmployee);
-      employeeInput.disabled = false;
+      const admin = isAdminUser();
+      let selectedNames = [];
+
+      if (task) {
+        selectedNames = getTaskAssignees(task);
+      } else if (!admin && currentEmployeeName()) {
+        selectedNames = [currentEmployeeName()];
+      } else if (admin && selectedEmployee && selectedEmployee !== "todos") {
+        selectedNames = [selectedEmployee];
+      } else {
+        selectedNames = [defaultEmployee];
+      }
+
+      setSelectedTaskEmployees(selectedNames);
       document.getElementById("requestDateInput").value = task?.requestDate || todayISO();
       document.getElementById("deadlineInput").value = task?.deadline || todayISO();
       document.getElementById("clientInput").value = task ? clientLabel({ alias: task.clientAlias, name: task.clientName, document: task.clientDocument }) : "";
@@ -2745,8 +2869,15 @@
       event.preventDefault();
 
       const selectedClient = parseClientInput(document.getElementById("clientInput").value);
+      let selectedEmployees = getSelectedTaskEmployees();
+
+      if (!isAdminUser() && currentEmployeeName()) {
+        selectedEmployees = [currentEmployeeName()];
+      }
+
       const payload = {
-        employee: employeeInput.value,
+        employee: selectedEmployees[0] || "",
+        assignees: selectedEmployees,
         clientAlias: selectedClient.alias,
         clientName: selectedClient.name,
         clientDocument: selectedClient.document,
@@ -2760,6 +2891,11 @@
         updatedAt: serverTimestamp(),
         updatedBy: currentUser?.email || null
       };
+
+      if (!payload.assignees.length) {
+        showToast("Marque pelo menos um funcionário responsável pelo serviço.");
+        return;
+      }
 
       if (!payload.serviceType) {
         showToast("Informe o tipo de serviço antes de salvar.");
