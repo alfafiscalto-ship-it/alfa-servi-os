@@ -880,6 +880,23 @@
       font-weight: 900;
     }
 
+    .table-actions {
+      display: flex;
+      gap: 7px;
+      flex-wrap: wrap;
+    }
+
+    .doc-hint {
+      display: block;
+      margin-top: 7px;
+      color: var(--muted-2);
+      font-size: 11px;
+      line-height: 1.35;
+      text-transform: none;
+      letter-spacing: normal;
+      font-weight: 600;
+    }
+
     .mini-kpis {
       display: grid;
       grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -963,6 +980,96 @@
     .visual-vencido { color: #fecaca; border-color: rgba(239,68,68,0.48); background: rgba(239,68,68,0.16); }
     .visual-hoje { color: #fde68a; border-color: rgba(245,158,11,0.46); background: rgba(245,158,11,0.16); }
     .visual-ok { color: #bbf7d0; border-color: rgba(34,197,94,0.42); background: rgba(34,197,94,0.14); }
+
+    .employee-selector-card {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 14px;
+      color: var(--text);
+      background: rgba(255,255,255,0.055);
+      cursor: pointer;
+      text-align: left;
+      transition: 180ms ease;
+      display: grid;
+      gap: 8px;
+    }
+
+    .employee-selector-card:hover {
+      transform: translateY(-1px);
+      border-color: var(--border-strong);
+      background: rgba(255,255,255,0.09);
+    }
+
+    .employee-selector-card:disabled {
+      cursor: default;
+      opacity: 0.88;
+      transform: none;
+    }
+
+    .employee-selector-kicker,
+    .employee-selector-hint {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .employee-selector-main {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .employee-selector-main strong {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .employee-choice-grid {
+      display: grid;
+      gap: 10px;
+    }
+
+    .employee-choice-btn {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 13px 14px;
+      background: rgba(255,255,255,0.055);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      cursor: pointer;
+      font-weight: 800;
+      transition: 180ms ease;
+    }
+
+    .employee-choice-btn:hover,
+    .employee-choice-btn.active {
+      background: rgba(255,255,255,0.105);
+      border-color: var(--border-strong);
+      transform: translateY(-1px);
+    }
+
+    .employee-choice-name {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .employee-choice-name span:last-child {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
 
     @media (max-width: 900px) {
       .client-grid,
@@ -1103,7 +1210,7 @@
 <body>
   <section class="login-screen" id="loginScreen">
     <div class="login-version-badge">
-      <strong>Versão 1.4</strong>
+      <strong>Versão 1.5</strong>
       <span>Sistema criado por David Moretti Ferreira.</span>
     </div>
     <div class="login-card">
@@ -1150,8 +1257,16 @@
         <button class="employee-btn" data-view="clients" id="viewClientsBtn">🏢 Clientes</button>
         <button class="employee-btn" data-view="reports" id="viewReportsBtn">📊 Relatórios</button>
       </div>
-      <div class="nav-title">Funcionários</div>
-      <div class="employee-list" id="employeeList"></div>
+      <div class="nav-title">Funcionário</div>
+      <button class="employee-selector-card" id="employeeSelectorBtn" type="button">
+        <span class="employee-selector-kicker">Selecionado</span>
+        <span class="employee-selector-main">
+          <span class="dot" id="selectedEmployeeDot" style="color: var(--red)"></span>
+          <strong id="selectedEmployeeLabel">Todos</strong>
+          <span class="employee-count" id="selectedEmployeeCount">0</span>
+        </span>
+        <span class="employee-selector-hint" id="employeeSelectorHint">Clique para escolher</span>
+      </button>
 
       <div class="config-box" id="firebaseWarning">
         <strong>Configuração Firebase:</strong><br>
@@ -1261,9 +1376,9 @@
         <div class="section-head">
           <div>
             <h2>Clientes e empresas</h2>
-            <p>Selecione clientes nos serviços, cadastre manualmente ou importe uma lista JSON direto para o Firebase sem deixar clientes gravados no HTML.</p>
+            <p>Selecione clientes nos serviços e cadastre novos clientes sem precisar alterar o código.</p>
           </div>
-          <button class="btn btn-secondary" id="syncSeedClientsBtn" type="button">Importar clientes</button>
+          <button class="btn btn-secondary" id="syncSeedClientsBtn" type="button">Importar lista inicial</button>
         </div>
 
         <div class="client-grid">
@@ -1293,7 +1408,7 @@
                 <th>Apelido</th>
                 <th>Razão social / Nome</th>
                 <th>CNPJ / CPF</th>
-                <th>Origem</th>
+                <th>Ações</th>
               </tr>
             </thead>
             <tbody id="clientsTableBody"></tbody>
@@ -1414,6 +1529,17 @@
     </div>
   </div>
 
+  <div class="modal" id="employeeSelectModal">
+    <div class="modal-card" style="width: min(560px, 100%);">
+      <div class="modal-header">
+        <h3>Selecionar funcionário</h3>
+        <button class="icon-btn" id="closeEmployeeSelectModalBtn" type="button">✕</button>
+      </div>
+
+      <div class="employee-choice-grid" id="employeeSelectOptions"></div>
+    </div>
+  </div>
+
   <div class="modal" id="clientImportModal">
     <div class="modal-card">
       <div class="modal-header">
@@ -1437,6 +1563,39 @@
         <button type="button" class="btn btn-ghost" id="cancelClientImportBtn">Cancelar</button>
         <button type="button" class="btn btn-primary" id="confirmClientImportBtn">Importar para o Firebase</button>
       </div>
+    </div>
+  </div>
+
+  <div class="modal" id="clientEditModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Editar cliente</h3>
+        <button class="icon-btn" id="closeClientEditModalBtn" type="button">✕</button>
+      </div>
+
+      <form id="clientEditForm">
+        <input type="hidden" id="clientEditId" />
+        <div class="form-grid">
+          <div class="field">
+            <label for="clientEditAliasInput">Apelido</label>
+            <input id="clientEditAliasInput" placeholder="Nome resumido do cliente" required />
+          </div>
+          <div class="field">
+            <label for="clientEditDocumentInput">CNPJ / CPF</label>
+            <input id="clientEditDocumentInput" placeholder="00.000.000/0000-00" />
+            <small class="doc-hint">O sistema valida CPF/CNPJ quando este campo for preenchido.</small>
+          </div>
+          <div class="field full">
+            <label for="clientEditNameInput">Razão social / Nome</label>
+            <input id="clientEditNameInput" placeholder="Nome completo do cliente" required />
+          </div>
+        </div>
+
+        <div class="actions" style="margin-top: 16px;">
+          <button type="button" class="btn btn-ghost" id="cancelClientEditBtn">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar cliente</button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -1499,6 +1658,7 @@
     // Os clientes são carregados exclusivamente da coleção "clientes" do Firestore.
     // Não há lista fixa de clientes neste HTML.
 
+
     function normalizeEmail(email) {
       return String(email || "").trim().toLowerCase();
     }
@@ -1546,13 +1706,13 @@
     let currentReportRows = [];
     let selectedEmployee = "todos";
     let editingTaskId = null;
+    let editingClientId = null;
     let firebaseReady = false;
     let currentUser = null;
     let currentUserProfile = null;
 
     const loginScreen = document.getElementById("loginScreen");
     const appShell = document.getElementById("appShell");
-    const employeeList = document.getElementById("employeeList");
     const employeeInput = document.getElementById("employeeInput");
     const pageTitle = document.getElementById("pageTitle");
     const pageSubtitle = document.getElementById("pageSubtitle");
@@ -1564,6 +1724,13 @@
     const connectionText = document.getElementById("connectionText");
     const firebaseWarning = document.getElementById("firebaseWarning");
     const currentUserEmail = document.getElementById("currentUserEmail");
+    const employeeSelectorBtn = document.getElementById("employeeSelectorBtn");
+    const selectedEmployeeDot = document.getElementById("selectedEmployeeDot");
+    const selectedEmployeeLabel = document.getElementById("selectedEmployeeLabel");
+    const selectedEmployeeCount = document.getElementById("selectedEmployeeCount");
+    const employeeSelectorHint = document.getElementById("employeeSelectorHint");
+    const employeeSelectModal = document.getElementById("employeeSelectModal");
+    const employeeSelectOptions = document.getElementById("employeeSelectOptions");
     const clientsSection = document.getElementById("clientsSection");
     const reportsSection = document.getElementById("reportsSection");
     const taskSections = [
@@ -1680,16 +1847,81 @@
       const tbody = document.getElementById("clientsTableBody");
       if (!tbody) return;
       const search = document.getElementById("clientSearchInput")?.value.trim().toLowerCase() || "";
-      const filtered = clients.filter(client => [client.alias, client.name, client.document, client.source]
+      const filtered = clients.filter(client => [client.alias, client.name, client.document]
         .join(" ").toLowerCase().includes(search));
       tbody.innerHTML = filtered.map(client => `
         <tr>
           <td><strong>${escapeHTML(client.alias || "-")}</strong></td>
           <td>${escapeHTML(client.name || "-")}</td>
-          <td>${escapeHTML(client.document || "-")}</td>
-          <td>${escapeHTML(client.source || "firebase")}</td>
+          <td>${escapeHTML(formatCpfCnpj(client.document) || "-")}</td>
+          <td>
+            <div class="table-actions">
+              <button class="icon-btn" data-client-action="edit" data-id="${escapeHTML(client.id || "")}">Editar</button>
+              <button class="icon-btn danger" data-client-action="delete" data-id="${escapeHTML(client.id || "")}">Excluir</button>
+            </div>
+          </td>
         </tr>
       `).join("") || `<tr><td colspan="4">Nenhum cliente encontrado.</td></tr>`;
+    }
+
+    function onlyDigits(value) {
+      return String(value || "").replace(/\D/g, "");
+    }
+
+    function isRepeatedDigits(value) {
+      return /^(\d)\1+$/.test(value);
+    }
+
+    function isValidCPF(value) {
+      const cpf = onlyDigits(value);
+      if (cpf.length !== 11 || isRepeatedDigits(cpf)) return false;
+
+      let sum = 0;
+      for (let i = 0; i < 9; i++) sum += Number(cpf[i]) * (10 - i);
+      let digit = 11 - (sum % 11);
+      if (digit >= 10) digit = 0;
+      if (digit !== Number(cpf[9])) return false;
+
+      sum = 0;
+      for (let i = 0; i < 10; i++) sum += Number(cpf[i]) * (11 - i);
+      digit = 11 - (sum % 11);
+      if (digit >= 10) digit = 0;
+      return digit === Number(cpf[10]);
+    }
+
+    function isValidCNPJ(value) {
+      const cnpj = onlyDigits(value);
+      if (cnpj.length !== 14 || isRepeatedDigits(cnpj)) return false;
+
+      const calc = (base, weights) => {
+        const sum = base.split("").reduce((total, digit, index) => total + Number(digit) * weights[index], 0);
+        const rest = sum % 11;
+        return rest < 2 ? 0 : 11 - rest;
+      };
+
+      const firstDigit = calc(cnpj.slice(0, 12), [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]);
+      const secondDigit = calc(cnpj.slice(0, 13), [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]);
+
+      return firstDigit === Number(cnpj[12]) && secondDigit === Number(cnpj[13]);
+    }
+
+    function validateCpfCnpj(value) {
+      const digits = onlyDigits(value);
+      if (!digits) return { valid: true, type: "", formatted: "" };
+      if (digits.length === 11 && isValidCPF(digits)) return { valid: true, type: "CPF", formatted: formatCpfCnpj(digits) };
+      if (digits.length === 14 && isValidCNPJ(digits)) return { valid: true, type: "CNPJ", formatted: formatCpfCnpj(digits) };
+      return { valid: false, type: digits.length <= 11 ? "CPF" : "CNPJ", formatted: value };
+    }
+
+    function formatCpfCnpj(value) {
+      const digits = onlyDigits(value);
+      if (digits.length === 11) {
+        return digits.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+      }
+      if (digits.length === 14) {
+        return digits.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, "$1.$2.$3/$4-$5");
+      }
+      return String(value || "").trim();
     }
 
     async function addClient() {
@@ -1697,25 +1929,64 @@
         showToast("Faça login antes de adicionar clientes.");
         return;
       }
+
       const alias = document.getElementById("clientAliasInput").value.trim();
       const name = document.getElementById("clientNameInput").value.trim();
       const documentNumber = document.getElementById("clientDocumentInput").value.trim();
+
       if (!alias && !name) {
         showToast("Informe pelo menos o apelido ou a razão social do cliente.");
         return;
       }
-      await addDoc(collection(db, "clientes"), {
-        alias: alias || name,
-        name,
-        document: documentNumber,
-        createdAt: serverTimestamp(),
-        createdBy: currentUser.email,
-        active: true
-      });
-      document.getElementById("clientAliasInput").value = "";
-      document.getElementById("clientNameInput").value = "";
-      document.getElementById("clientDocumentInput").value = "";
-      showToast("Cliente adicionado com sucesso.");
+
+      const documentValidation = validateCpfCnpj(documentNumber);
+      if (!documentValidation.valid) {
+        showToast("CNPJ/CPF inválido. Confira os números digitados antes de salvar.");
+        return;
+      }
+
+      const clientDocument = documentValidation.formatted || "";
+      const duplicate = clientDocument && clients.some(client => onlyDigits(client.document) === onlyDigits(clientDocument));
+      if (duplicate) {
+        const confirmDuplicate = confirm("Já existe um cliente com este CNPJ/CPF. Deseja cadastrar mesmo assim?");
+        if (!confirmDuplicate) return;
+      }
+
+      const button = document.getElementById("addClientBtn");
+      const originalText = button?.textContent || "+ Adicionar";
+
+      try {
+        if (button) {
+          button.disabled = true;
+          button.textContent = "Salvando...";
+        }
+
+        const clientId = onlyDigits(clientDocument) || doc(collection(db, "clientes")).id;
+        await setDoc(doc(db, "clientes", clientId), {
+          alias: alias || name,
+          name: name || alias,
+          document: clientDocument,
+          source: "firebase",
+          active: true,
+          createdAt: serverTimestamp(),
+          createdBy: currentUser.email,
+          updatedAt: serverTimestamp(),
+          updatedBy: currentUser.email
+        }, { merge: true });
+
+        document.getElementById("clientAliasInput").value = "";
+        document.getElementById("clientNameInput").value = "";
+        document.getElementById("clientDocumentInput").value = "";
+        showToast("Cliente adicionado com sucesso.");
+      } catch (error) {
+        console.error(error);
+        showToast(error?.message || "Não foi possível adicionar o cliente. Confira as regras do Firestore.");
+      } finally {
+        if (button) {
+          button.disabled = false;
+          button.textContent = originalText;
+        }
+      }
     }
 
     function openClientImportModal() {
@@ -1788,6 +2059,21 @@
         return;
       }
 
+      const invalidClients = importedClients
+        .map((client, index) => ({ client, index: index + 1, validation: validateCpfCnpj(client.document) }))
+        .filter(item => item.client.document && !item.validation.valid);
+
+      if (invalidClients.length) {
+        const examples = invalidClients.slice(0, 3).map(item => `linha ${item.index}: ${item.client.alias || item.client.name || "sem nome"}`).join("; ");
+        showToast(`Há ${invalidClients.length} cliente(s) com CNPJ/CPF inválido no JSON. Ex.: ${examples}`);
+        return;
+      }
+
+      importedClients = importedClients.map(client => {
+        const validation = validateCpfCnpj(client.document);
+        return { ...client, document: validation.formatted || "" };
+      });
+
       const confirmImport = confirm(`Importar ${importedClients.length} cliente(s) para a coleção clientes do Firestore?`);
       if (!confirmImport) return;
 
@@ -1802,7 +2088,7 @@
 
         let count = 0;
         for (const client of importedClients) {
-          const documentDigits = String(client.document || "").replace(/\D/g, "");
+          const documentDigits = onlyDigits(client.document);
           const fallbackId = slugClientId(client.alias || client.name);
           const clientId = documentDigits || fallbackId || doc(collection(db, "clientes")).id;
           await setDoc(doc(db, "clientes", clientId), {
@@ -1829,6 +2115,146 @@
         }
       }
     }
+
+    function openClientEditModal(client) {
+      if (!client?.id) {
+        showToast("Não foi possível identificar este cliente para edição.");
+        return;
+      }
+
+      editingClientId = client.id;
+      document.getElementById("clientEditId").value = client.id;
+      document.getElementById("clientEditAliasInput").value = client.alias || "";
+      document.getElementById("clientEditNameInput").value = client.name || "";
+      document.getElementById("clientEditDocumentInput").value = formatCpfCnpj(client.document) || "";
+      document.getElementById("clientEditModal").classList.add("open");
+      document.body.classList.add("modal-is-open");
+    }
+
+    function closeClientEditModal() {
+      document.getElementById("clientEditModal").classList.remove("open");
+      document.body.classList.remove("modal-is-open");
+      document.getElementById("clientEditForm").reset();
+      editingClientId = null;
+    }
+
+    async function saveClientEdit(event) {
+      event.preventDefault();
+
+      if (!firebaseReady || !currentUser) {
+        showToast("Faça login antes de editar clientes.");
+        return;
+      }
+
+      const clientId = editingClientId || document.getElementById("clientEditId").value;
+      if (!clientId) {
+        showToast("Cliente não identificado para edição.");
+        return;
+      }
+
+      const alias = document.getElementById("clientEditAliasInput").value.trim();
+      const name = document.getElementById("clientEditNameInput").value.trim();
+      const documentNumber = document.getElementById("clientEditDocumentInput").value.trim();
+
+      if (!alias && !name) {
+        showToast("Informe pelo menos o apelido ou a razão social do cliente.");
+        return;
+      }
+
+      const documentValidation = validateCpfCnpj(documentNumber);
+      if (!documentValidation.valid) {
+        showToast("CNPJ/CPF inválido. Confira os números digitados antes de salvar.");
+        return;
+      }
+
+      const clientDocument = documentValidation.formatted || "";
+      const duplicate = clientDocument && clients.some(client => client.id !== clientId && onlyDigits(client.document) === onlyDigits(clientDocument));
+      if (duplicate) {
+        const confirmDuplicate = confirm("Já existe outro cliente com este CNPJ/CPF. Deseja salvar mesmo assim?");
+        if (!confirmDuplicate) return;
+      }
+
+      const submitButton = document.querySelector('#clientEditForm button[type="submit"]');
+      const originalText = submitButton?.textContent || "Salvar cliente";
+
+      try {
+        if (submitButton) {
+          submitButton.disabled = true;
+          submitButton.textContent = "Salvando...";
+        }
+
+        await updateDoc(doc(db, "clientes", clientId), {
+          alias: alias || name,
+          name: name || alias,
+          document: clientDocument,
+          active: true,
+          updatedAt: serverTimestamp(),
+          updatedBy: currentUser.email
+        });
+
+        closeClientEditModal();
+        showToast("Cliente atualizado com sucesso.");
+      } catch (error) {
+        console.error(error);
+        showToast(error?.message || "Não foi possível editar o cliente. Confira as regras do Firestore.");
+      } finally {
+        if (submitButton) {
+          submitButton.disabled = false;
+          submitButton.textContent = originalText;
+        }
+      }
+    }
+
+    async function deleteClient(clientId) {
+      if (!firebaseReady || !currentUser) {
+        showToast("Faça login antes de excluir clientes.");
+        return;
+      }
+
+      const client = clients.find(item => item.id === clientId);
+      if (!client) {
+        showToast("Cliente não encontrado para exclusão.");
+        return;
+      }
+
+      const usedInTasks = tasks.some(task =>
+        onlyDigits(task.clientDocument) === onlyDigits(client.document)
+        || String(task.clientAlias || "").trim().toLowerCase() === String(client.alias || "").trim().toLowerCase()
+      );
+
+      const message = usedInTasks
+        ? `Este cliente aparece em tarefa(s) já cadastrada(s). Excluir o cadastro não apaga as tarefas, mas ele deixará de aparecer na lista de clientes. Confirmar exclusão de "${client.alias || client.name}"?`
+        : `Confirmar exclusão de "${client.alias || client.name}"?`;
+
+      const confirmDelete = confirm(message);
+      if (!confirmDelete) return;
+
+      try {
+        await deleteDoc(doc(db, "clientes", clientId));
+        showToast("Cliente excluído com sucesso.");
+      } catch (error) {
+        console.error(error);
+        showToast(error?.message || "Não foi possível excluir o cliente. Confira as regras do Firestore.");
+      }
+    }
+
+    function handleClientAction(event) {
+      const button = event.target.closest("button[data-client-action]");
+      if (!button) return;
+
+      const clientId = button.dataset.id;
+      const client = clients.find(item => item.id === clientId);
+
+      if (button.dataset.clientAction === "edit") {
+        openClientEditModal(client);
+        return;
+      }
+
+      if (button.dataset.clientAction === "delete") {
+        deleteClient(clientId);
+      }
+    }
+
 
     function setView(view) {
       document.querySelectorAll("[data-view]").forEach(btn => btn.classList.toggle("active", btn.dataset.view === view));
@@ -1923,7 +2349,7 @@
       const timestamp = now.toISOString();
       const backup = {
         sistema: "Alfa Contabilidade - Sistema de Serviços",
-        versao: "1.4",
+        versao: "1.5",
         exportadoEm: timestamp,
         exportadoPor: currentUser?.email || null,
         observacao: "Backup manual gerado pelo navegador. Para backup automático real, use Firebase/Google Cloud com Cloud Functions ou Cloud Scheduler.",
@@ -2029,15 +2455,90 @@
       }, 1100);
     }
 
+    function getEmployeeColor(employeeName) {
+      if (employeeName === "todos") return "var(--red)";
+      return employees.find(employee => employee.name === employeeName)?.color || "var(--red)";
+    }
+
+    function getEmployeeDisplayName(employeeName) {
+      return employeeName === "todos" ? "Todos" : employeeName;
+    }
+
+    function getEmployeeOpenCount(employeeName) {
+      if (employeeName === "todos") return tasks.length;
+      return tasks.filter(task => task.employee === employeeName && task.status !== "concluido").length;
+    }
+
+    function updateEmployeeSelector() {
+      if (!selectedEmployeeLabel || !selectedEmployeeDot || !selectedEmployeeCount || !employeeSelectorBtn) return;
+      const employeeName = selectedEmployee || "todos";
+      selectedEmployeeLabel.textContent = getEmployeeDisplayName(employeeName);
+      selectedEmployeeDot.style.color = getEmployeeColor(employeeName);
+      selectedEmployeeCount.textContent = getEmployeeOpenCount(employeeName);
+
+      const admin = isAdminUser() || !currentUserProfile;
+      employeeSelectorBtn.disabled = !admin;
+      employeeSelectorHint.textContent = admin ? "Clique para escolher" : "Restrito ao seu usuário";
+    }
+
+    function renderEmployeeChoices() {
+      if (!employeeSelectOptions) return;
+      const options = [{ name: "todos", label: "Todos", color: "var(--red)" }, ...employees.map(employee => ({
+        name: employee.name,
+        label: employee.name,
+        color: employee.color
+      }))];
+
+      employeeSelectOptions.innerHTML = options.map(option => `
+        <button class="employee-choice-btn ${option.name === selectedEmployee ? "active" : ""}" type="button" data-employee-choice="${escapeHTML(option.name)}">
+          <span class="employee-choice-name">
+            <span class="dot" style="color:${escapeHTML(option.color)}"></span>
+            <span>${escapeHTML(option.label)}</span>
+          </span>
+          <span class="employee-count">${getEmployeeOpenCount(option.name)}</span>
+        </button>
+      `).join("");
+    }
+
+    function openEmployeeSelectModal() {
+      if (!isAdminUser()) {
+        showToast("Seu usuário visualiza apenas os próprios serviços.");
+        return;
+      }
+      renderEmployeeChoices();
+      employeeSelectModal.classList.add("open");
+      document.body.classList.add("modal-is-open");
+    }
+
+    function closeEmployeeSelectModal() {
+      employeeSelectModal.classList.remove("open");
+      document.body.classList.remove("modal-is-open");
+    }
+
+    function selectEmployee(employeeName, closePicker = false) {
+      const admin = isAdminUser() || !currentUserProfile;
+      const ownEmployee = currentEmployeeName();
+
+      if (!admin) {
+        selectedEmployee = ownEmployee;
+        showToast("Seu usuário visualiza apenas os próprios serviços.");
+      } else {
+        selectedEmployee = employeeName || "todos";
+      }
+
+      updateEmployeeSelector();
+      render();
+
+      if (closePicker) closeEmployeeSelectModal();
+    }
+
     function buildEmployees() {
-      employeeList.innerHTML = "";
       employeeInput.innerHTML = "";
       const reportEmployeeInput = document.getElementById("reportEmployeeInput");
       if (reportEmployeeInput) reportEmployeeInput.innerHTML = "";
 
       const admin = isAdminUser() || !currentUserProfile;
       const ownEmployee = currentEmployeeName();
-      const visibleEmployees = admin ? employees : employees.filter(employee => employee.name === ownEmployee);
 
       employees.forEach(employee => {
         const option = document.createElement("option");
@@ -2046,67 +2547,30 @@
         employeeInput.appendChild(option);
       });
 
-      if (admin) {
-        const allBtn = document.createElement("button");
-        allBtn.className = "employee-btn";
-        allBtn.dataset.employee = "todos";
-        allBtn.innerHTML = `
-          <span class="employee-name"><span class="dot" style="color: var(--red)"></span>Todos</span>
-          <span class="employee-count" id="count-todos">0</span>
-        `;
-        employeeList.appendChild(allBtn);
-
-        if (reportEmployeeInput) {
+      if (reportEmployeeInput) {
+        if (admin) {
           const reportAll = document.createElement("option");
           reportAll.value = "todos";
           reportAll.textContent = "Todos";
           reportEmployeeInput.appendChild(reportAll);
         }
-      }
 
-      visibleEmployees.forEach(employee => {
-        const btn = document.createElement("button");
-        btn.className = "employee-btn";
-        btn.dataset.employee = employee.name;
-        btn.innerHTML = `
-          <span class="employee-name"><span class="dot" style="color:${employee.color}"></span>${employee.name}</span>
-          <span class="employee-count" id="count-${employee.name}">0</span>
-        `;
-        employeeList.appendChild(btn);
-
-        if (reportEmployeeInput) {
+        employees.forEach(employee => {
           const reportOption = document.createElement("option");
           reportOption.value = employee.name;
           reportOption.textContent = employee.name;
           reportEmployeeInput.appendChild(reportOption);
-        }
-      });
+        });
+
+        reportEmployeeInput.disabled = !admin;
+        reportEmployeeInput.value = admin ? (reportEmployeeInput.value || "todos") : ownEmployee;
+      }
 
       selectedEmployee = admin ? (selectedEmployee || "todos") : ownEmployee;
       if (!selectedEmployee || (!admin && selectedEmployee !== ownEmployee)) selectedEmployee = admin ? "todos" : ownEmployee;
 
       employeeInput.disabled = false;
-      if (reportEmployeeInput) {
-        reportEmployeeInput.disabled = !admin;
-        reportEmployeeInput.value = admin ? (reportEmployeeInput.value || "todos") : ownEmployee;
-      }
-
-      document.querySelectorAll(".employee-list .employee-btn").forEach(item => {
-        item.classList.toggle("active", item.dataset.employee === selectedEmployee);
-      });
-
-      employeeList.onclick = (event) => {
-        const btn = event.target.closest(".employee-btn");
-        if (!btn) return;
-        if (!admin && btn.dataset.employee !== ownEmployee) {
-          showToast("Seu usuário visualiza apenas os próprios serviços.");
-          return;
-        }
-        selectedEmployee = btn.dataset.employee;
-        document.querySelectorAll(".employee-list .employee-btn").forEach(item => item.classList.remove("active"));
-        btn.classList.add("active");
-        render();
-      };
+      updateEmployeeSelector();
     }
 
     function getFilteredTasks() {
@@ -2148,12 +2612,8 @@
       document.getElementById("countAndamento").textContent = andamento;
       document.getElementById("countConcluido").textContent = concluido;
 
-      const countTodosEl = document.getElementById("count-todos");
-      if (countTodosEl) countTodosEl.textContent = tasks.length;
-      employees.forEach(employee => {
-        const el = document.getElementById(`count-${employee.name}`);
-        if (el) el.textContent = tasks.filter(task => task.employee === employee.name && task.status !== "concluido").length;
-      });
+      updateEmployeeSelector();
+      if (employeeSelectModal?.classList.contains("open")) renderEmployeeChoices();
     }
 
     function renderHeader() {
@@ -2481,7 +2941,7 @@
     function listenClients() {
       if (unsubscribeClients) unsubscribeClients();
       unsubscribeClients = onSnapshot(collection(db, "clientes"), (snapshot) => {
-        const firebaseClients = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data(), source: docSnap.data().source || "firebase" }));
+        const firebaseClients = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data(), source: "firebase" }));
         clients = getMergedClients(firebaseClients);
         renderClients();
         buildClientDatalist();
@@ -2547,15 +3007,17 @@
     document.getElementById("closeModalBtn").addEventListener("click", closeModal);
     document.getElementById("cancelBtn").addEventListener("click", closeModal);
     document.getElementById("allTasksBtn").addEventListener("click", () => {
-      if (!isAdminUser()) {
-        selectedEmployee = currentEmployeeName();
-        showToast("Seu usuário visualiza apenas os próprios serviços.");
-        render();
-        return;
-      }
-      selectedEmployee = "todos";
-      document.querySelectorAll(".employee-list .employee-btn").forEach(item => item.classList.toggle("active", item.dataset.employee === "todos"));
-      render();
+      selectEmployee("todos");
+    });
+    employeeSelectorBtn.addEventListener("click", openEmployeeSelectModal);
+    document.getElementById("closeEmployeeSelectModalBtn").addEventListener("click", closeEmployeeSelectModal);
+    employeeSelectModal.addEventListener("click", event => {
+      if (event.target === employeeSelectModal) closeEmployeeSelectModal();
+    });
+    employeeSelectOptions.addEventListener("click", event => {
+      const btn = event.target.closest("[data-employee-choice]");
+      if (!btn) return;
+      selectEmployee(btn.dataset.employeeChoice, true);
     });
     document.getElementById("searchInput").addEventListener("input", debouncedRender);
     document.getElementById("statusFilter").addEventListener("change", render);
@@ -2566,6 +3028,8 @@
     document.getElementById("viewReportsBtn").addEventListener("click", () => setView("reports"));
     document.getElementById("addClientBtn").addEventListener("click", addClient);
     document.getElementById("syncSeedClientsBtn").addEventListener("click", openClientImportModal);
+    document.getElementById("clientSearchInput").addEventListener("input", renderClients);
+    document.getElementById("clientsTableBody").addEventListener("click", handleClientAction);
     document.getElementById("closeClientImportModalBtn").addEventListener("click", closeClientImportModal);
     document.getElementById("cancelClientImportBtn").addEventListener("click", closeClientImportModal);
     document.getElementById("confirmClientImportBtn").addEventListener("click", importClientsFromJsonText);
@@ -2579,7 +3043,20 @@
     document.getElementById("clientImportModal").addEventListener("click", event => {
       if (event.target === document.getElementById("clientImportModal")) closeClientImportModal();
     });
-    document.getElementById("clientSearchInput").addEventListener("input", renderClients);
+    document.getElementById("clientEditForm").addEventListener("submit", saveClientEdit);
+    document.getElementById("closeClientEditModalBtn").addEventListener("click", closeClientEditModal);
+    document.getElementById("cancelClientEditBtn").addEventListener("click", closeClientEditModal);
+    document.getElementById("clientEditModal").addEventListener("click", event => {
+      if (event.target === document.getElementById("clientEditModal")) closeClientEditModal();
+    });
+    document.getElementById("clientDocumentInput").addEventListener("blur", event => {
+      const validation = validateCpfCnpj(event.target.value);
+      if (validation.formatted) event.target.value = validation.formatted;
+    });
+    document.getElementById("clientEditDocumentInput").addEventListener("blur", event => {
+      const validation = validateCpfCnpj(event.target.value);
+      if (validation.formatted) event.target.value = validation.formatted;
+    });
     document.getElementById("generateReportBtn").addEventListener("click", generateReport);
     document.getElementById("exportReportBtn").addEventListener("click", exportReportCsv);
     document.getElementById("reportMonthInput").value = todayISO().slice(0, 7);
