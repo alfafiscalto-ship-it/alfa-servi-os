@@ -1275,7 +1275,7 @@
 <body>
   <section class="login-screen" id="loginScreen">
     <div class="login-version-badge">
-      <strong>Versão 1.5.2.</strong>
+      <strong>Versão 1.5.3</strong>
       <span>Sistema criado por David Moretti Ferreira.</span>
     </div>
     <div class="login-card">
@@ -1543,7 +1543,7 @@
           <div class="field full">
             <label for="employeeInput">Funcionário(s)</label>
             <div id="employeeInput" class="employee-multi-grid" role="group" aria-label="Selecionar um ou mais funcionários"></div>
-            <small class="doc-hint">Marque uma ou mais pessoas responsáveis por este serviço.</small>
+            <small class="doc-hint">Marque uma ou mais pessoas responsáveis por este serviço. Todos os usuários autorizados podem criar serviço para qualquer funcionário.</small>
           </div>
           <div class="field">
             <label for="requestDateInput">Data do pedido</label>
@@ -2415,7 +2415,7 @@
       const timestamp = now.toISOString();
       const backup = {
         sistema: "Alfa Contabilidade - Sistema de Serviços",
-        versao: "1.5.2",
+        versao: "1.5.3",
         exportadoEm: timestamp,
         exportadoPor: currentUser?.email || null,
         observacao: "Backup manual gerado pelo navegador. Para backup automático real, use Firebase/Google Cloud com Cloud Functions ou Cloud Scheduler.",
@@ -2652,7 +2652,7 @@
           </span>
         `;
         const checkbox = label.querySelector("input");
-        checkbox.disabled = !admin && employee.name !== ownEmployee;
+        checkbox.disabled = false;
         employeeInput.appendChild(label);
       });
 
@@ -2688,8 +2688,9 @@
 
       return tasks.filter(task => {
         const assigneeText = getTaskAssigneeText(task);
-        const byLoggedUser = isAdminUser() || !currentEmployeeName() || taskHasEmployee(task, currentEmployeeName());
-        const byEmployee = selectedEmployee === "todos" || taskHasEmployee(task, selectedEmployee);
+        const createdByCurrentUser = currentUser?.email && normalizeEmail(task.createdBy) === normalizeEmail(currentUser.email);
+        const byLoggedUser = isAdminUser() || !currentEmployeeName() || taskHasEmployee(task, currentEmployeeName()) || createdByCurrentUser;
+        const byEmployee = selectedEmployee === "todos" || taskHasEmployee(task, selectedEmployee) || (!isAdminUser() && createdByCurrentUser);
         const byStatus = statusFilter === "todos" || task.status === statusFilter;
         const byPriority = priorityFilter === "todas" || task.priority === priorityFilter;
         const text = [assigneeText, task.clientAlias, task.clientName, task.clientDocument, task.serviceType, task.description, task.observation, task.status, task.priority]
@@ -2871,9 +2872,6 @@
       const selectedClient = parseClientInput(document.getElementById("clientInput").value);
       let selectedEmployees = getSelectedTaskEmployees();
 
-      if (!isAdminUser() && currentEmployeeName()) {
-        selectedEmployees = [currentEmployeeName()];
-      }
 
       const payload = {
         employee: selectedEmployees[0] || "",
