@@ -3300,7 +3300,7 @@
         selectedNames = getTaskAssignees(task);
       } else if (!admin && currentEmployeeName()) {
         selectedNames = [currentEmployeeName()];
-      } else if (admin && selectedEmployee && selectedEmployee !== "todos") {
+      } else if (admin && selectedEmployee && selectedEmployee !== "todos" && getEmployeeByName(selectedEmployee)?.active !== false) {
         selectedNames = [selectedEmployee];
       } else {
         selectedNames = [defaultEmployee];
@@ -3346,6 +3346,11 @@
       const selectedClient = parseClientInput(document.getElementById("clientInput").value);
       let selectedEmployees = getSelectedTaskEmployees();
 
+      // Funcionários inativos continuam em tarefas históricas já existentes,
+      // mas nunca podem ser adicionados a uma tarefa nova.
+      if (!editingTaskId) {
+        selectedEmployees = selectedEmployees.filter(name => getEmployeeByName(name)?.active !== false);
+      }
 
       const payload = {
         employee: selectedEmployees[0] || "",
