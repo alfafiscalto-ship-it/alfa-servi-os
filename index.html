@@ -2920,6 +2920,7 @@
       }
 
       const employeeId = editingEmployeeId || employeeSlug(name) || doc(collection(db, "funcionarios")).id;
+      const wasEditing = Boolean(editingEmployeeId);
       const submitButton = document.querySelector('#employeeManagementForm button[type="submit"]');
       const originalText = submitButton?.textContent || "Salvar funcionário";
 
@@ -2937,7 +2938,7 @@
           ...(editingEmployeeId ? {} : { createdAt: serverTimestamp(), createdBy: currentUser.email })
         }, { merge: true });
         closeEmployeeManagementModal();
-        showToast(editingEmployeeId ? "Funcionário atualizado." : "Funcionário adicionado à equipe.");
+        showToast(wasEditing ? "Funcionário atualizado." : "Funcionário adicionado à equipe.");
       } catch (error) {
         console.error(error);
         showToast(error?.code === "permission-denied"
