@@ -948,6 +948,12 @@
       overflow: hidden;
     }
 
+    /* ALFA-DEV:
+   ANEXOS / STORAGE — PONTO DE ATENÇÃO DO BASELINE 24/08/2026.
+   Este arquivo contém apenas estilos visuais para anexos. Não há, nesta versão,
+   import do SDK firebase-storage nem rotina ativa de upload/remoção.
+   Não presumir integração funcional com Storage sem implementar/testar explicitamente.
+   */
     .attachment-list {
       margin-top: 12px;
       display: grid;
@@ -1404,6 +1410,17 @@
   </style>
 </head>
 <body>
+  <!-- ALFA-DEV:
+BASE TÉCNICA DOCUMENTADA EM 24/08/2026.
+Este index.html é o ponto de entrada do sistema e deve permanecer compatível com os documentos já existentes no Firebase.
+Não recriar banco, coleções, usuários ou Storage durante alterações de frontend.
+Histórico e decisões: CONTEXTO_SISTEMA_ALFA.md.
+-->
+  <!-- ALFA-DEV:
+AUTENTICAÇÃO.
+Esta tela usa Firebase Authentication por e-mail/senha.
+Os IDs do formulário são consumidos pelo JavaScript; evitar renomeá-los sem revisar os listeners e handleLogin().
+-->
   <section class="login-screen" id="loginScreen">
     <div class="login-version-badge">
       <strong>Versão 1.6.0</strong>
@@ -1433,6 +1450,11 @@
   </section>
 
   <div class="app-shell" id="appShell">
+    <!-- ALFA-DEV:
+SIDEBAR / NAVEGAÇÃO.
+Área historicamente sensível a overflow e rolagem. Há regras responsivas e uma correção específica mais abaixo no CSS.
+Alterações aqui devem ser testadas em desktop e telas menores antes de publicar.
+-->
     <aside class="sidebar">
       <div class="brand">
         <div class="brand-mark">A</div>
@@ -1543,6 +1565,11 @@
         </div>
       </section>
 
+      <!-- ALFA-DEV:
+TAREFAS / KANBAN.
+As três colunas dependem dos status existentes: pendente, andamento e concluido.
+Não alterar esses valores sem verificar os documentos da coleção "tarefas".
+-->
       <section class="board">
         <div class="column">
           <div class="column-header">
@@ -1569,6 +1596,11 @@
         </div>
       </section>
 
+      <!-- ALFA-DEV:
+CLIENTES.
+O cadastro desta tela lê e grava na coleção "clientes".
+Os campos alias, name e document são usados também nas tarefas e nos relatórios.
+-->
       <section class="management-section" id="clientsSection">
         <div class="section-head">
           <div>
@@ -1644,6 +1676,11 @@
         </div>
       </section>
 
+      <!-- ALFA-DEV:
+RELATÓRIOS.
+Nesta versão o recorte mensal usa requestDate (data do pedido), sem criar coleção própria de relatórios.
+O relatório é calculado no navegador a partir de "tarefas".
+-->
       <section class="management-section" id="reportsSection">
         <div class="section-head">
           <div>
@@ -1693,6 +1730,11 @@
     </main>
   </div>
 
+  <!-- ALFA-DEV:
+MODAL NOVO/EDITAR SERVIÇO.
+IDs dos campos abaixo alimentam saveTask() e openModal().
+Preservar os nomes dos campos gravados no Firestore para manter compatibilidade com tarefas antigas.
+-->
   <div class="modal" id="taskModal">
     <div class="modal-card">
       <div class="modal-header">
@@ -1866,6 +1908,11 @@
   <div class="toast" id="toast"></div>
 
   <script type="module">
+    // ALFA-DEV:
+// SDK FIREBASE.
+// Este baseline usa Firebase 10.12.5 para App, Authentication e Cloud Firestore.
+// Não trocar por Realtime Database. Storage não está importado neste arquivo.
+// Ver CONTEXTO_SISTEMA_ALFA.md antes de alterar dependências.
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
     import {
       getAuth,
@@ -1887,6 +1934,10 @@
       Timestamp
     } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
+    // ALFA-DEV:
+// EQUIPE / COMPATIBILIDADE.
+// defaultEmployees é apenas uma base local; a coleção "funcionarios" pode sobrescrever/complementar estes registros.
+// Nomes existentes são usados como vínculo histórico em tarefas; evitar renomear pessoas já utilizadas.
     const defaultEmployees = [
       { id: "henrique", name: "Henrique", color: "#ef4444", active: true },
       { id: "rebeca", name: "Rebeca", color: "#ff4fa3", active: false },
@@ -1904,6 +1955,10 @@
     // os dados correspondentes sem mudar o formato das tarefas existentes.
     let employees = defaultEmployees.map(employee => ({ ...employee }));
 
+    // ALFA-DEV:
+// AUTORIZAÇÃO NO FRONTEND.
+// Esta lista não substitui as regras do Firestore nem o Firebase Authentication.
+// Ao alterar usuários no futuro, conferir de forma coordenada Authentication + frontend + regras, somente com autorização expressa.
     const allowedUserEmails = [
       "alfafiscalto@gmail.com",
       "alfacontabilidade2014@gmail.com",
@@ -1956,6 +2011,11 @@
          Cole as regras atualizadas informadas junto com este arquivo no Firestore.
       5) Copie as credenciais do app Web e substitua o objeto firebaseConfig abaixo somente se trocar o projeto Firebase.
     */
+    // ALFA-DEV:
+// FIREBASE CONFIG — PRESERVAÇÃO OBRIGATÓRIA.
+// Configuração do projeto Firebase atualmente utilizado pelo sistema.
+// Não alterar estes valores, nem migrar projeto/banco, sem solicitação expressa.
+// Atualizar o frontend NÃO recria nem apaga o Firestore.
     const firebaseConfig = {
       apiKey: "AIzaSyCMLD4nzWvBzL7WHbQnGVl2a3sFmC7WmsY",
       authDomain: "alfa-work-b8ace.firebaseapp.com",
@@ -2547,6 +2607,10 @@
       return String(dateString || "").slice(0, 7);
     }
 
+    // ALFA-DEV:
+// RELATÓRIOS.
+// Calculados em memória a partir de tasks; atualmente o mês é filtrado por task.requestDate.
+// Não há escrita em coleção de relatórios nesta função.
     function generateReport() {
       const month = document.getElementById("reportMonthInput").value || todayISO().slice(0, 7);
       const employee = document.getElementById("reportEmployeeInput").value;
@@ -2618,6 +2682,10 @@
       }
     }
 
+    // ALFA-DEV:
+// BACKUP MANUAL DE DADOS.
+// Exporta JSON pelo navegador. A rotina de importação abaixo PODE gravar no Firestore,
+// portanto deve continuar restrita ao administrador e nunca ser usada como teste destrutivo.
     function exportBackupJson() {
       if (!isAdminUser()) {
         showToast("A exportação de backup é exclusiva do administrador.");
@@ -3153,6 +3221,10 @@
       updateEmployeeSelector();
     }
 
+    // ALFA-DEV:
+// FILTROS DE TAREFAS.
+// Filtro local sobre dados já carregados: usuário, funcionário, status, prioridade e busca textual.
+// Alterações devem preservar a restrição de visualização aplicada aos usuários não administradores.
     function getFilteredTasks() {
       const searchTerm = document.getElementById("searchInput").value.trim().toLowerCase();
       const statusFilter = document.getElementById("statusFilter").value;
@@ -3340,6 +3412,11 @@
 
     
 
+    // ALFA-DEV:
+// GRAVAÇÃO CRÍTICA — COLEÇÃO "tarefas".
+// Preservar os campos employee, assignees, clientAlias, clientName, clientDocument,
+// requestDate, deadline, serviceType, description, status, priority e observation.
+// Mudanças de schema exigem análise de compatibilidade com documentos existentes.
     async function saveTask(event) {
       event.preventDefault();
 
@@ -3427,6 +3504,10 @@
       }
     }
 
+    // ALFA-DEV:
+// STATUS / EXCLUSÃO DE TAREFAS.
+// "next" atualiza somente status + auditoria; "delete" remove o documento da coleção "tarefas".
+// Não transformar testes de interface em gravações reais sem registro claramente identificado como teste.
     async function handleTaskAction(event) {
       const button = event.target.closest("button[data-action]");
       if (!button) return;
@@ -3465,6 +3546,10 @@
       }
     }
 
+    // ALFA-DEV:
+// LOGIN.
+// Valida primeiro a lista local de e-mails e depois autentica no Firebase Authentication.
+// Erros de login devem ser investigados sem apagar/recriar usuários existentes.
     async function handleLogin(event) {
       event.preventDefault();
 
@@ -3537,6 +3622,10 @@
       renderClients();
     }
 
+    // ALFA-DEV:
+// LEITURA EM TEMPO REAL — "tarefas".
+// onSnapshot mantém a interface sincronizada com o Firestore.
+// Esta leitura alimenta Kanban, KPIs, equipe e relatórios.
     function listenTasks() {
       if (unsubscribe) unsubscribe();
       unsubscribe = onSnapshot(collection(db, "tarefas"), (snapshot) => {
@@ -3582,6 +3671,10 @@
       });
     }
 
+    // ALFA-DEV:
+// LEITURA EM TEMPO REAL — "clientes".
+// Mantém o cadastro e o datalist do formulário de tarefas sincronizados.
+// Não substituir a origem por lista fixa no HTML.
     function listenClients() {
       if (unsubscribeClients) unsubscribeClients();
       unsubscribeClients = onSnapshot(collection(db, "clientes"), (snapshot) => {
@@ -3597,6 +3690,10 @@
       });
     }
 
+    // ALFA-DEV:
+// INICIALIZAÇÃO CENTRAL DO FIREBASE.
+// Inicializa App + Auth + Firestore usando o firebaseConfig preservado acima.
+// Se houver falha de dados, verificar primeiro autenticação, regras e conectividade antes de alterar schema.
     function startFirebase() {
       if (!isFirebaseConfigured()) {
         setConnection("offline", "Firebase não configurado");
