@@ -1,201 +1,724 @@
 # Alfa Serviços — roteiro permanente de evolução
 
-> Documento de continuidade técnica / auto-prompt do projeto.
-> Antes de alterar o sistema, leia este arquivo e depois procure no `index.html` pelos marcadores `ALFA-ARCH`, `ALFA-DATA-CONTRACT`, `ALFA-CHANGELOG` e `ALFA-NEXT`.
+> Documento oficial de roadmap e continuidade das evoluções do sistema interno da Alfa Contabilidade.
+> Última atualização: 24/08/2026 às 16:56 (America/Sao_Paulo).
+> Este arquivo deve ser mantido e atualizado a cada etapa relevante concluída.
 
-## 1. Objetivo do sistema
+## 1. Função deste documento
 
-Transformar o Alfa Serviços em uma central operacional interna da Alfa Contabilidade: o sistema deve dizer com clareza **o que precisa ser feito, por quem, para qual cliente e até quando**, mantendo histórico, produtividade e segurança.
+Este arquivo responde principalmente a quatro perguntas:
 
-O sistema é hospedado no GitHub Pages e usa Firebase Authentication + Cloud Firestore. O arquivo principal continua sendo `index.html`.
+1. O que já foi concluído?
+2. Qual é a próxima etapa aprovada?
+3. Qual é a ordem planejada das próximas melhorias?
+4. Quais regras de segurança devem ser respeitadas durante a evolução?
 
-## 2. Regra de ouro: preservar os dados
+Ele deve ser usado em conjunto com:
 
-Mudanças visuais e de arquitetura do front-end não podem alterar, apagar, migrar ou renomear dados existentes sem solicitação expressa do usuário.
+- `CONTEXTO_SISTEMA_ALFA.md` — memória técnica do funcionamento atual;
+- `index.html` — código principal do sistema;
+- comentários `ALFA-DEV` — pistas técnicas inseridas nos pontos críticos do código.
 
-Contrato atual que deve ser tratado como estável:
+### Regra de separação
+
+- `CONTEXTO_SISTEMA_ALFA.md` registra **como o sistema funciona atualmente**.
+- `EVOLUCAO_ALFA_SERVICOS.md` registra **o que será melhorado e em qual ordem**.
+- `index.html` contém o código efetivamente utilizado em produção.
+
+---
+
+## 2. Objetivo do sistema
+
+Transformar gradualmente o Alfa Serviços em uma central operacional interna profissional da Alfa Contabilidade.
+
+O sistema deve permitir que a equipe identifique rapidamente:
+
+- o que precisa ser feito;
+- para qual cliente;
+- quem é o responsável;
+- qual é o prazo;
+- qual é a prioridade;
+- o que está vencido;
+- o que precisa de atenção hoje;
+- o que já foi concluído.
+
+A evolução deve seguir a ordem de prioridade:
+
+**SEGURANÇA → ESTABILIDADE → ORGANIZAÇÃO → USABILIDADE → NOVAS FUNCIONALIDADES → ESTÉTICA**
+
+---
+
+## 3. Arquitetura oficial do projeto
+
+### Código e versionamento
+
+**GitHub**
+
+- fonte oficial do código;
+- repositório: `alfafiscalto-ship-it/alfa-servi-os`;
+- branch de produção: `main`;
+- arquivo principal: `index.html`.
+
+### Hospedagem e deploy
+
+**Vercel**
+
+Fluxo correto:
+
+```text
+index.html atual
+      ↓
+branch de trabalho no GitHub
+      ↓
+Preview da Vercel
+      ↓
+testes
+      ↓
+merge no main
+      ↓
+deploy automático da Vercel
+      ↓
+produção
+```
+
+Não realizar upload manual do site diretamente na Vercel quando a integração Git estiver funcionando.
+
+### Login
+
+**Firebase Authentication**
+
+- autenticação por e-mail e senha;
+- usuários existentes devem ser preservados;
+- problemas de frontend não justificam apagar ou recriar usuários.
+
+### Banco de dados
+
+**Cloud Firestore**
+
+Coleções utilizadas pelo sistema atual:
+
+- `tarefas`;
+- `clientes`;
+- `funcionarios`.
+
+Não utilizar Realtime Database.
+
+### Anexos
+
+**Firebase Storage** é a tecnologia prevista para anexos.
+
+Entretanto, no baseline analisado em 24/08/2026, o `index.html` possui `storageBucket` no `firebaseConfig` e estilos visuais de anexos, mas **não possui integração funcional de upload com o Firebase Storage**.
+
+Por isso, anexos devem ser tratados como uma etapa funcional futura específica e não como uma funcionalidade já confirmada.
+
+---
+
+## 4. Contrato de segurança dos dados
+
+Alterações de frontend NÃO devem automaticamente:
+
+- apagar documentos;
+- recriar banco;
+- migrar coleções;
+- renomear coleções;
+- renomear campos existentes;
+- trocar projeto Firebase;
+- trocar `firebaseConfig`;
+- alterar Firebase Authentication;
+- apagar usuários;
+- alterar regras do Firestore;
+- alterar regras do Storage;
+- apagar anexos.
+
+Contrato atual a preservar:
 
 - coleção `tarefas`;
 - coleção `clientes`;
 - coleção `funcionarios`;
-- IDs de documentos existentes;
-- campos já existentes nas tarefas, clientes e funcionários;
-- `firebaseConfig` do projeto atual;
-- autenticação por e-mail e senha;
-- perfis e usuários autorizados já existentes.
+- IDs existentes;
+- campos existentes;
+- `firebaseConfig` atual;
+- usuários e perfis autorizados;
+- autenticação por e-mail e senha.
 
-Uma evolução pode **ler e cruzar** os dados existentes para gerar dashboards, listas, filtros, relatórios e indicadores sem gravar novos campos.
+Uma melhoria pode ler, filtrar, ordenar e cruzar os dados existentes no navegador sem modificar o banco.
 
-## 3. Regra de trabalho para futuras alterações
+---
 
-1. Sempre usar como base o `index.html` que o usuário anexar na conversa atual. Nunca reconstruir a partir de uma versão antiga do chat.
-2. Antes de editar, localizar e ler os comentários de continuidade dentro do próprio `index.html`.
-3. Não trocar o projeto Firebase nem o `firebaseConfig`, salvo pedido explícito.
-4. Não mudar nomes das coleções ou estrutura dos documentos existentes sem necessidade comprovada e autorização explícita.
-5. Não deixar regras do Firestore abertas para qualquer pessoa.
-6. Fazer alterações incrementais e reversíveis.
-7. Preservar funcionalidades que já funcionam.
-8. Priorizar produtividade de escritório: prazo, prioridade, cliente, responsável e situação devem ser visíveis rapidamente.
-9. Depois de uma alteração relevante, registrar um comentário `ALFA-CHANGELOG` no código e atualizar este MD.
-10. Sempre manter um ponto de restauração no GitHub antes de mudanças grandes.
+## 5. Regra obrigatória de trabalho
 
-## 4. Pistas obrigatórias dentro do código
+Para cada alteração funcional relevante:
 
-O `index.html` deve conter comentários pesquisáveis para orientar a próxima manutenção.
+1. utilizar exclusivamente o `index.html` atual anexado pelo usuário na conversa correspondente;
+2. ler `CONTEXTO_SISTEMA_ALFA.md`;
+3. ler este `EVOLUCAO_ALFA_SERVICOS.md`;
+4. localizar os comentários `ALFA-DEV` relevantes no código;
+5. confirmar qual commit do `main` está funcional;
+6. criar um ponto de rollback antes da alteração;
+7. criar branch de trabalho separada;
+8. implementar apenas a etapa aprovada;
+9. não misturar melhorias estruturais não relacionadas;
+10. validar sintaxe e estrutura do HTML/JavaScript;
+11. revisar o diff antes de publicar;
+12. publicar a branch no GitHub;
+13. conferir Preview da Vercel;
+14. realizar testes não destrutivos;
+15. somente depois fazer merge no `main`;
+16. conferir o deployment de produção da Vercel;
+17. atualizar `CONTEXTO_SISTEMA_ALFA.md` quando o funcionamento atual mudar;
+18. atualizar este roteiro quando uma etapa for concluída;
+19. atualizar/adicionar comentários `ALFA-DEV` nos pontos críticos alterados.
 
-### `ALFA-ARCH`
-Explica arquitetura de uma área e por que ela existe.
+### Testes com Firestore
 
-Exemplo:
+Nunca usar dados reais desnecessariamente para testes.
 
-```html
-<!-- ALFA-ARCH: Dashboard usa somente dados já carregados do Firestore. Não cria documentos. -->
-```
+Quando uma gravação for indispensável:
 
-### `ALFA-DATA-CONTRACT`
-Marca trechos que não podem ter nomes de coleção/campos alterados casualmente.
+- utilizar registro claramente identificado como teste;
+- evitar qualquer alteração destrutiva;
+- remover somente o próprio registro de teste se isso puder ser feito com segurança;
+- nunca testar importação de backup em produção apenas para validar interface.
 
-Exemplo:
+---
 
-```js
-// ALFA-DATA-CONTRACT: manter coleções tarefas, clientes e funcionarios.
-```
+## 6. Estado atual do projeto
 
-### `ALFA-CHANGELOG`
-Registra alterações relevantes, com data e versão.
+### Baseline funcional anterior à documentação
 
-Exemplo:
+Commit:
 
-```js
-// ALFA-CHANGELOG 2026-08-24 v2.0.0: criado painel Início sem alterar esquema do Firestore.
-```
+`9c2dbc5cf622d22426af68f19ed6ef805eebd2fa`
 
-### `ALFA-NEXT`
-Registra melhorias planejadas que ainda não devem ser implementadas sem avaliação.
+Blob do `index.html` confirmado:
 
-Exemplo:
+`13111dd49b22700ceac5ec43f3b3eef625e13a70`
 
-```js
-// ALFA-NEXT: calendário mensal de prazos reutilizando task.deadline.
-```
+### Rollback preservado
 
-Esses marcadores devem ser mantidos nas versões futuras. Quando uma melhoria `ALFA-NEXT` for concluída, ela deve virar `ALFA-CHANGELOG`.
+Branch:
 
-## 5. Arquitetura desejada do front-end
+`backup/antes-contexto-alfa-2026-08-24`
 
-Mesmo que o sistema continue em um único HTML, a lógica deve ser pensada em camadas:
+Essa branch deve continuar preservada como ponto de retorno anterior à criação da nova base documental.
+
+### Produção após a Etapa 0
+
+Commit publicado:
+
+`9c4cfd5d3b619944611012db26cf803c2bee4265`
+
+Alterações desse commit:
+
+- criação de `CONTEXTO_SISTEMA_ALFA.md`;
+- comentários estratégicos `ALFA-DEV` no `index.html`;
+- nenhuma alteração funcional no Firestore;
+- nenhuma alteração no `firebaseConfig`;
+- nenhuma alteração em usuários;
+- nenhuma mudança de schema;
+- deploy de produção confirmado com status de sucesso pela integração Vercel/GitHub.
+
+---
+
+# 7. ROADMAP OFICIAL
+
+## ETAPA 0 — Base segura de manutenção
+
+**Status: ✅ CONCLUÍDA em 24/08/2026**
+
+### Objetivo
+
+Criar condições seguras para evoluir o sistema sem perder histórico nem depender da memória de uma conversa.
+
+### Concluído
+
+- baseline funcional identificado;
+- arquivo anexado confirmado como correspondente ao `main` da época;
+- branch de rollback criada;
+- `CONTEXTO_SISTEMA_ALFA.md` criado;
+- comentários `ALFA-DEV` adicionados ao código;
+- Firebase e estrutura de dados preservados;
+- Preview Vercel validado;
+- alteração publicada no `main`;
+- deployment de produção confirmado.
+
+### Resultado
+
+O projeto agora possui documentação técnica, histórico e rollback antes das próximas mudanças funcionais.
+
+---
+
+## ETAPA 1 — Painel Início / Hoje
+
+**Status: 🟡 APROVADA — PRÓXIMA ETAPA A IMPLEMENTAR**
+
+### Objetivo
+
+Transformar a primeira tela do sistema em uma central de atenção diária, sem adicionar coleção, documento ou campo ao Firestore.
+
+### Escopo aprovado
+
+Criar novo módulo:
+
+**🏠 Início**
+
+O painel deverá utilizar as tarefas já carregadas e mostrar pelo menos:
+
+- tarefas vencidas;
+- tarefas que vencem hoje;
+- tarefas que vencem nos próximos 3 dias;
+- tarefas de prioridade alta;
+- tarefas em andamento;
+- visão das tarefas do funcionário conectado;
+- resumo geral da equipe para administradores.
+
+Exemplo conceitual:
 
 ```text
-Firebase / Firestore
-        ↓
-carregamento e escrita de dados
-        ↓
-estado local: tasks / clients / employees
-        ↓
-seletores e cálculos derivados
-        ↓
-views e componentes visuais
+Boa tarde, David
+
+2 vencidas
+3 vencem hoje
+4 vencem nos próximos 3 dias
+2 prioridades altas
+5 em andamento
 ```
 
-Evitar espalhar regras de negócio pela interface. Sempre que possível, criar helpers reutilizáveis para:
+### Ajuste técnico incluído nesta etapa
 
-- tarefas visíveis pelo usuário;
-- vencidas;
-- vencem hoje;
-- próximos vencimentos;
-- prioridade alta;
-- tarefas por funcionário;
-- tarefas por cliente;
-- indicadores mensais.
+Corrigir o cálculo da data atual.
 
-## 6. Roadmap
+Função atual:
 
-### Etapa 0 — segurança e continuidade
-Status: concluída em 24/08/2026.
+```javascript
+new Date().toISOString().slice(0, 10)
+```
 
-- criar branch de backup antes da evolução 2.0;
-- criar este MD;
-- inserir marcadores de continuidade no `index.html`;
-- preservar banco e `firebaseConfig`.
+Esse cálculo utiliza UTC.
 
-### Etapa 1 — central operacional
-Status: em implantação em 24/08/2026.
+A Etapa 1 deverá utilizar corretamente a data local do navegador/escritório para classificações como:
 
-Objetivo: tornar o sistema útil já no primeiro acesso sem alterar o Firestore.
+- vencido;
+- vence hoje;
+- próximos dias.
 
-- criar módulo **Início**;
-- mostrar vencidas, vencem hoje, próximos 7 dias, alta prioridade e em andamento;
-- criar acesso rápido **Minha fila**;
-- manter Kanban;
-- adicionar visualização **Lista** para tarefas;
-- priorizar visualmente cliente, serviço, responsável e prazo;
-- ordenar tarefas de forma mais útil por urgência;
-- corrigir cálculo de data atual para data local do navegador;
-- mover backup, restauração e alteração de senha para **Administração**;
-- permitir relatório por **Data do pedido** ou **Prazo limite**;
-- criar painel operacional de cliente usando as tarefas existentes.
+Essa correção não deve modificar datas históricas já gravadas.
 
-### Etapa 2 — produtividade e navegação
-Status: planejada.
+### Restrições
 
-- calendário mensal/semanal por `deadline` sem necessidade de novos campos;
-- busca global com atalho `Ctrl + K`;
-- filtros rápidos: vencidas, hoje, semana, alta prioridade;
-- persistir preferência de visualização no `localStorage`;
-- detalhes de tarefa em painel lateral em vez de excesso de informação no cartão;
-- melhorar responsividade em notebooks menores.
+- não criar nova coleção;
+- não criar campos obrigatórios;
+- não regravar tarefas antigas;
+- não alterar os valores de `status`;
+- não alterar `firebaseConfig`;
+- não reconstruir o Kanban;
+- não implementar calendário ainda;
+- não alterar anexos nesta etapa.
 
-### Etapa 3 — arquitetura interna
-Status: planejada.
+### Critérios de aceite
 
-- reduzir CSS duplicado e dependência de `!important`;
-- agrupar estilos por componente;
-- organizar JavaScript por módulos lógicos dentro do mesmo arquivo ou, se autorizado, separar em arquivos estáticos sem alterar Firestore;
-- criar uma camada única para operações de `tarefas`, `clientes` e `funcionarios`;
-- reduzir chamadas diretas ao Firestore espalhadas pelo código;
-- padronizar tratamento de erros e loading states.
+- Início aparece na navegação;
+- administrador vê resumo da equipe;
+- funcionário comum vê corretamente sua situação;
+- tarefa concluída não aparece como vencida;
+- múltiplos responsáveis continuam funcionando;
+- tarefas vencidas são calculadas corretamente;
+- tarefas de hoje são calculadas pela data local;
+- Kanban existente continua funcionando;
+- Clientes, Relatórios e Equipe continuam funcionando;
+- nenhuma gravação adicional no Firestore é gerada apenas ao abrir o painel;
+- desktop e telas menores continuam utilizáveis.
 
-### Etapa 4 — gestão avançada
-Status: futura; avaliar antes de qualquer mudança de banco.
+---
 
-Possibilidades que podem exigir novos campos e, portanto, **não devem ser implementadas automaticamente**:
+## ETAPA 2 — Modo Lista de tarefas
 
-- histórico detalhado de mudança de status;
-- comentários por tarefa;
-- checklist/subtarefas;
-- data/hora real de conclusão;
-- recorrência automática de obrigações;
+**Status: ⚪ PLANEJADA**
+
+### Objetivo
+
+Oferecer uma visualização mais rápida para grande volume de serviços sem remover o Kanban.
+
+### Planejado
+
+Alternância:
+
+```text
+Lista | Kanban
+```
+
+Colunas sugeridas:
+
+- Cliente;
+- Serviço;
+- Responsável;
+- Prazo;
+- Prioridade;
+- Status.
+
+### Regra
+
+A Lista deve reutilizar os mesmos objetos `tasks` já carregados.
+
+Não criar uma segunda base de tarefas.
+
+---
+
+## ETAPA 3 — Ficha operacional do cliente
+
+**Status: ⚪ PLANEJADA**
+
+### Objetivo
+
+Transformar o módulo Clientes em uma área operacional, e não apenas cadastral.
+
+### Planejado
+
+Ao selecionar um cliente, mostrar:
+
+- serviços abertos;
+- pendentes;
+- em andamento;
+- concluídos no período;
+- vencidos;
+- responsáveis;
+- histórico disponível pelas tarefas existentes.
+
+### Regra
+
+Primeira versão deve cruzar `clientes` e `tarefas` localmente, sem alterar schema.
+
+---
+
+## ETAPA 4 — Calendário / visão de prazos
+
+**Status: ⚪ PLANEJADA**
+
+### Objetivo
+
+Permitir visualizar a carga de trabalho por prazo.
+
+### Planejado
+
+- visão mensal;
+- possibilidade futura de visão semanal;
+- tarefas organizadas por `deadline`;
+- identificação de vencidas e prioridades;
+- acesso da tarefa a partir do calendário.
+
+### Regra
+
+Usar `deadline` existente antes de considerar qualquer campo novo.
+
+---
+
+## ETAPA 5 — Relatórios por pedido ou prazo
+
+**Status: ⚪ PLANEJADA**
+
+### Objetivo
+
+Diferenciar duas análises:
+
+1. tarefas recebidas em determinado mês;
+2. tarefas que precisam ser entregues em determinado mês.
+
+### Planejado
+
+Adicionar critério:
+
+```text
+Período baseado em:
+[ Data do pedido ] [ Prazo limite ]
+```
+
+### Regra
+
+- `requestDate` continua válido;
+- `deadline` será opção adicional;
+- não criar coleção de relatório;
+- manter exportação CSV funcionando.
+
+---
+
+## ETAPA 6 — Busca global
+
+**Status: ⚪ PLANEJADA**
+
+### Objetivo
+
+Localizar rapidamente informações sem depender do módulo aberto.
+
+### Planejado
+
+Pesquisar por:
+
+- cliente;
+- CNPJ/CPF;
+- serviço;
+- descrição;
+- observação;
+- funcionário.
+
+Possível atalho futuro:
+
+`Ctrl + K`
+
+### Regra
+
+A primeira versão deve pesquisar somente os dados já carregados no navegador.
+
+---
+
+## ETAPA 7 — Administração organizada
+
+**Status: ⚪ PLANEJADA**
+
+### Objetivo
+
+Retirar ações administrativas da área operacional principal.
+
+### Planejado
+
+Criar área administrativa para ações como:
+
+- exportar backup;
+- importar backup;
+- alteração de senha;
+- gestão de equipe;
+- ferramentas administrativas futuras.
+
+### Atenção
+
+A importação de backup grava no Firestore e deve continuar protegida e claramente diferenciada das funções operacionais.
+
+---
+
+## ETAPA 8 — Anexos / Firebase Storage
+
+**Status: ⚠️ PLANEJADA — EXIGE ANÁLISE ESPECÍFICA**
+
+### Situação atual
+
+O baseline analisado não possui integração funcional com Firebase Storage, apesar de conter:
+
+- `storageBucket` no `firebaseConfig`;
+- estilos de anexos.
+
+### Objetivo futuro
+
+Implementar anexos reais para tarefas, se aprovado.
+
+Tipos esperados pelo projeto:
+
+- imagens;
+- PDF;
+- Word;
+- Excel;
+- XML;
+- TXT.
+
+### Antes de implementar
+
+Confirmar:
+
+- regras atuais do Storage;
+- estrutura de pastas;
+- relacionamento entre arquivo e tarefa;
+- política de exclusão;
+- tamanho máximo;
+- tratamento de nomes repetidos;
+- compatibilidade com eventuais arquivos já existentes no bucket.
+
+### Regra
+
+Não alterar regras do Storage nem apagar arquivos sem autorização expressa.
+
+---
+
+## ETAPA 9 — Limpeza gradual da arquitetura do frontend
+
+**Status: ⚪ PLANEJADA**
+
+### Objetivo
+
+Reduzir risco de manutenção sem fazer uma reescrita geral.
+
+### Pontos planejados
+
+- reduzir CSS duplicado;
+- reduzir dependência de `!important`;
+- organizar blocos CSS por componente;
+- organizar JavaScript por responsabilidade;
+- concentrar operações Firestore em funções mais previsíveis;
+- padronizar tratamento de erros;
+- padronizar loading states;
+- revisar overflow e responsividade.
+
+### Regra principal
+
+Essa etapa será incremental.
+
+Não realizar uma grande refatoração estética/arquitetural de uma vez.
+
+Cada limpeza deve provar que não modificou o comportamento esperado.
+
+---
+
+## ETAPA 10 — Gestão avançada
+
+**Status: 🔵 FUTURA — NÃO IMPLEMENTAR AUTOMATICAMENTE**
+
+Possibilidades futuras que podem exigir novos campos ou estruturas:
+
+- histórico detalhado de mudanças de status;
+- comentários em tarefas;
+- subtarefas/checklists;
+- data e hora efetiva de conclusão;
+- tarefas recorrentes;
 - notificações automáticas;
-- anexos via Firebase Storage;
-- SLA e tempo médio de execução.
+- SLA;
+- tempo médio de execução;
+- indicadores de produtividade mais avançados.
 
-Qualquer item desta etapa deve ser discutido antes porque pode mudar o contrato de dados.
+Qualquer item desta etapa deve ser discutido antes, pois pode alterar o contrato de dados.
 
-## 7. Critérios de qualidade
+---
 
-Uma versão só deve ser considerada boa se:
+# 8. Ordem oficial de execução
 
-- login continua funcionando;
-- tarefas antigas continuam aparecendo;
-- criar/editar/iniciar/concluir/reabrir tarefa continua funcionando;
-- clientes continuam carregando;
-- equipe continua carregando;
-- relatórios continuam funcionando;
-- nenhum dado existente é removido ou renomeado;
-- telas não ficam cortadas;
-- modal Novo serviço continua com rolagem interna;
-- navegação funciona em desktop e celular;
-- erros do Firestore continuam sendo explicados de forma legível;
-- uma futura manutenção consegue entender as decisões pelos marcadores no código e por este MD.
+A ordem atualmente aprovada é:
 
-## 8. Backup e restauração da evolução 2.0
+| Ordem | Etapa | Status | Risco estimado |
+|---|---|---|---|
+| 0 | Base segura de manutenção | ✅ Concluída | Muito baixo |
+| 1 | Painel Início / Hoje | 🟡 Próxima | Muito baixo |
+| 2 | Modo Lista | ⚪ Planejada | Baixo |
+| 3 | Ficha operacional do cliente | ⚪ Planejada | Baixo |
+| 4 | Calendário / prazos | ⚪ Planejada | Baixo |
+| 5 | Relatórios por pedido/prazo | ⚪ Planejada | Baixo |
+| 6 | Busca global | ⚪ Planejada | Baixo |
+| 7 | Administração organizada | ⚪ Planejada | Médio |
+| 8 | Anexos / Storage | ⚠️ Planejada | Médio |
+| 9 | Limpeza gradual da arquitetura | ⚪ Planejada | Médio |
+| 10 | Gestão avançada | 🔵 Futura | Avaliar caso a caso |
 
-Antes da primeira implantação 2.0 foi criada a branch:
+Essa ordem pode ser alterada pelo usuário, mas nunca silenciosamente pela manutenção.
 
-`backup/pre-alfa-2-0-2026-08-24`
+---
 
-Ela deve ser tratada como ponto de restauração da versão anterior à evolução de arquitetura iniciada em 24/08/2026.
+# 9. Critérios gerais de qualidade
 
-## 9. Instrução curta para a próxima IA/manutenção
+Uma versão funcional só deve ser considerada pronta quando, conforme o módulo afetado, forem verificados:
 
-Leia este MD inteiro. Depois abra o `index.html` atual e pesquise os marcadores `ALFA-ARCH`, `ALFA-DATA-CONTRACT`, `ALFA-CHANGELOG` e `ALFA-NEXT`. Preserve o contrato do Firestore e o `firebaseConfig`. Evolua primeiro a interface e os cálculos derivados. Não crie migração, coleção ou campo novo apenas por conveniência. Registre no código e neste MD o que foi alterado e mantenha uma restauração disponível antes de mudanças grandes.
+- carregamento da página;
+- login;
+- carregamento de tarefas;
+- criação de tarefa;
+- edição de tarefa;
+- iniciar tarefa;
+- concluir tarefa;
+- reabrir tarefa;
+- clientes;
+- busca;
+- filtros;
+- relatórios;
+- modais;
+- sidebar;
+- rolagem;
+- responsividade;
+- permissões administrativas;
+- ausência de alteração inesperada no Firestore.
+
+Para anexos, quando a Etapa 8 existir de fato, acrescentar:
+
+- upload;
+- leitura/download;
+- visualização;
+- remoção autorizada;
+- tratamento de erro do Storage.
+
+---
+
+# 10. Política de rollback
+
+Antes de cada etapa funcional importante:
+
+1. identificar o commit de produção funcional;
+2. criar branch de backup ou outro ponto de restauração claro;
+3. registrar esse ponto neste arquivo ou no `CONTEXTO_SISTEMA_ALFA.md`;
+4. trabalhar em branch separada;
+5. validar Preview Vercel;
+6. somente então promover para `main`.
+
+Se a produção apresentar regressão:
+
+- interromper novas mudanças;
+- identificar o último commit funcional;
+- usar Git/GitHub como mecanismo principal de rollback;
+- não restaurar backup JSON de dados para corrigir erro de frontend.
+
+---
+
+# 11. Marcadores técnicos no código
+
+O padrão atual é:
+
+`ALFA-DEV`
+
+Esses comentários devem permanecer apenas em pontos estratégicos, como:
+
+- Firebase;
+- autenticação;
+- contrato de dados;
+- leitura/gravação no Firestore;
+- tarefas;
+- clientes;
+- relatórios;
+- anexos;
+- filtros;
+- modais críticos;
+- sidebar/overflow;
+- funções que já apresentaram problemas.
+
+Não espalhar comentários em todas as linhas.
+
+Os marcadores antigos citados em versões anteriores deste roteiro (`ALFA-ARCH`, `ALFA-DATA-CONTRACT`, `ALFA-CHANGELOG` e `ALFA-NEXT`) não são mais o padrão principal. A manutenção deve usar `ALFA-DEV` e os dois arquivos Markdown como referência oficial.
+
+---
+
+# 12. Como atualizar este roadmap
+
+Quando uma etapa for concluída:
+
+1. trocar o status da etapa para `✅ CONCLUÍDA`;
+2. registrar a data;
+3. registrar o commit publicado;
+4. registrar a branch de rollback correspondente;
+5. resumir o que foi realmente implementado;
+6. registrar qualquer decisão diferente do plano original;
+7. mover a indicação `PRÓXIMA ETAPA` para a etapa seguinte;
+8. garantir que `CONTEXTO_SISTEMA_ALFA.md` também reflita o sistema que passou a existir.
+
+Não apagar o histórico das etapas concluídas.
+
+---
+
+# 13. Instrução curta para futuras manutenções
+
+Antes de alterar o sistema:
+
+1. use somente o `index.html` atual anexado na conversa;
+2. leia `CONTEXTO_SISTEMA_ALFA.md`;
+3. leia `EVOLUCAO_ALFA_SERVICOS.md`;
+4. pesquise `ALFA-DEV` no código;
+5. preserve `firebaseConfig` e o contrato do Firestore;
+6. crie rollback;
+7. altere somente a etapa aprovada;
+8. teste em branch/Preview Vercel;
+9. atualize a documentação;
+10. publique pelo GitHub e confirme a Vercel.
+
+## Próxima ação registrada
+
+**Implementar a ETAPA 1 — Painel Início / Hoje, incluindo correção segura da data local, sem alterar o Firestore.**
