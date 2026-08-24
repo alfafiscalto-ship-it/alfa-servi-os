@@ -1,0 +1,37 @@
+name: Close Stage 1 Documentation
+
+on:
+  push:
+    branches:
+      - docs/conclui-etapa1-2026-08-24
+
+permissions:
+  contents: write
+
+jobs:
+  update-docs:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Update documentation
+        run: python .github/scripts/close_stage1_docs.py
+
+      - name: Validate documentation
+        run: |
+          grep -q "ETAPA 1 — Painel Início / Hoje" EVOLUCAO_ALFA_SERVICOS.md
+          grep -q "Status: ✅ CONCLUÍDA em 24/08/2026" EVOLUCAO_ALFA_SERVICOS.md
+          grep -q "ETAPA 2 — Modo Lista de tarefas" EVOLUCAO_ALFA_SERVICOS.md
+          grep -q "5ac984554f046ba68e62da923e7ea72ff3cb6097" CONTEXTO_SISTEMA_ALFA.md
+          grep -q "America/Sao_Paulo" CONTEXTO_SISTEMA_ALFA.md
+
+      - name: Commit final documentation only
+        run: |
+          git config user.name "Alfa maintenance bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add EVOLUCAO_ALFA_SERVICOS.md CONTEXTO_SISTEMA_ALFA.md
+          git rm .github/scripts/close_stage1_docs.py .github/workflows/close-stage1-docs.yml
+          git commit -m "docs: conclui etapa 1 e define etapa 2"
+          git push
