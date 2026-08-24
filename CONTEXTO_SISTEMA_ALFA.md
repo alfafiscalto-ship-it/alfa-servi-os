@@ -1,7 +1,7 @@
 # CONTEXTO_SISTEMA_ALFA
 
 > Memória técnica do sistema interno Alfa Contabilidade.
-> Última atualização: 24/08/2026.
+> Última atualização: 24/08/2026 às 17:11 (America/Sao_Paulo).
 > Fonte técnica desta revisão: `index.html` anexado na conversa em 24/08/2026 e confirmado como idêntico ao `index.html` do branch `main` no momento do baseline.
 > Este documento deve ser lido antes de alterações relevantes no frontend.
 
@@ -16,6 +16,10 @@
   - commit: `9c2dbc5cf622d22426af68f19ed6ef805eebd2fa`;
   - blob do `index.html`: `13111dd49b22700ceac5ec43f3b3eef625e13a70`;
   - branch de rollback: `backup/antes-contexto-alfa-2026-08-24`.
+- Release funcional atual após a Etapa 1:
+  - versão visual: `1.7.0`;
+  - commit funcional: `5ac984554f046ba68e62da923e7ea72ff3cb6097`;
+  - rollback anterior à Etapa 1: `backup/antes-dashboard-inicio-2026-08-24`.
 
 ### Vercel
 - É a plataforma definida para hospedagem/deploy do sistema.
@@ -74,6 +78,23 @@ O sistema atual é um arquivo único com HTML, CSS e JavaScript `type="module"`.
 - `allowedUserEmails`: autorização adicional no frontend.
 - `userProfiles`: nome, perfil e vínculo com funcionário.
 - Alterações futuras em acesso devem ser coordenadas com Authentication e regras, quando expressamente autorizadas.
+
+### Painel Início / Hoje
+- Tela: `#homeSection`.
+- Navegação: `#viewHomeBtn`.
+- É a primeira view aberta após autenticação bem-sucedida.
+- É uma camada somente de leitura sobre `tasks` e `employees` já carregados.
+- Funções relevantes: `renderHomeDashboard()`, `renderHomeTaskRows()`, `renderHomeTeamSummary()`, `renderHomePersonalQueue()`, `handleHomeAction()`, `isTaskVisibleToCurrentUser()` e `getDashboardEmployeeName()`.
+- Indicadores: vencidas, vencem hoje, próximos 3 dias, alta prioridade e em andamento.
+- Administradores também recebem resumo por responsável.
+- O painel não cria coleção, documento ou campo e não grava no Firestore apenas por ser aberto.
+- Botões do painel reutilizam fluxos existentes, como `openModal()` e a view de tarefas.
+
+### Data operacional
+- Timezone oficial usada para classificar hoje/vencimento: `America/Sao_Paulo`.
+- `todayISO()` não usa mais `toISOString()` diretamente para definir o dia operacional.
+- Helpers novos: `getOfficeDateParts()`, `addDaysISO()`, `calendarDayDiff()`, `getOfficeHour()` e `getOfficeGreeting()`.
+- A mudança afeta apenas cálculos no frontend; datas históricas do Firestore não foram convertidas nem regravadas.
 
 ### Tarefas
 - Interface principal: `section.board`.
@@ -167,6 +188,7 @@ O sistema atual é um arquivo único com HTML, CSS e JavaScript `type="module"`.
 ### Sidebar
 - Elemento: `<aside class="sidebar">`.
 - Navegação de módulos:
+  - Início;
   - Tarefas;
   - Clientes;
   - Relatórios;
@@ -202,6 +224,11 @@ O sistema atual é um arquivo único com HTML, CSS e JavaScript `type="module"`.
 
 Funcionalidades efetivamente encontradas no código:
 - login por Firebase Authentication;
+- painel **Início / Hoje** como primeira tela pós-login;
+- indicadores derivados de vencimento, hoje, próximos 3 dias, alta prioridade e andamento;
+- resumo operacional da equipe para administradores;
+- visão `Minha fila` quando o perfil administrativo corresponde a funcionário existente;
+- data operacional calculada em `America/Sao_Paulo`;
 - restrição adicional de e-mails no frontend;
 - sessão acompanhada por `onAuthStateChanged`;
 - visualização de tarefas em Kanban;
@@ -273,6 +300,44 @@ Não considerar como funcionalidade confirmada neste baseline:
 
 ---
 
+### 24/08/2026 — Etapa 1: Painel Início / Hoje
+**Objetivo:** transformar a primeira tela em uma central operacional diária sem modificar o contrato de dados.
+
+**Solução aplicada**
+- criado `#homeSection` e botão `🏠 Início`;
+- Início passa a abrir automaticamente após login;
+- adicionados KPIs de vencidas, hoje, próximos 3 dias, alta prioridade e em andamento;
+- criadas listas de atenção e próximos prazos;
+- criado resumo por funcionário para administradores;
+- criada `Minha fila` para administrador associado a funcionário;
+- tarefas podem ser abertas pelo painel usando o modal existente;
+- `todayISO()` corrigido para `America/Sao_Paulo`;
+- versão visual atualizada para `1.7.0`;
+- adicionados comentários `ALFA-DEV` na nova área.
+
+**Publicação**
+- rollback: `backup/antes-dashboard-inicio-2026-08-24`;
+- PR: `#3`;
+- commit funcional: `5ac984554f046ba68e62da923e7ea72ff3cb6097`;
+- Preview Vercel: sucesso;
+- produção Vercel: sucesso.
+
+**Validação**
+- sintaxe JavaScript validada;
+- bloco do dashboard verificado como sem chamadas de escrita do Firestore;
+- teste da virada UTC x `America/Sao_Paulo` aprovado;
+- inspeção visual automatizada não foi possível porque o navegador disponível no ambiente bloqueou páginas locais por política administrativa.
+
+**Partes NÃO alteradas**
+- coleções, documentos e campos do Firestore;
+- `firebaseConfig`;
+- Authentication;
+- Storage e suas regras;
+- valores dos status existentes;
+- estrutura base do Kanban, Clientes, Relatórios e Equipe.
+
+---
+
 ## 5. Decisões técnicas permanentes
 
 1. GitHub é a fonte oficial do código.
@@ -327,9 +392,10 @@ Não considerar como funcionalidade confirmada neste baseline:
 - Trocar para `deadline` ou oferecer ambos deve ser uma melhoria separada e explicitamente testada.
 
 ### Data local
-- `todayISO()` usa `new Date().toISOString().slice(0, 10)`, portanto calcula a data por UTC.
-- Em horários próximos da virada UTC isso pode divergir do dia local do escritório.
-- Correção recomendada em alteração funcional separada; não foi modificada nesta etapa.
+- Corrigida na Etapa 1.
+- O dia operacional é calculado em `America/Sao_Paulo`.
+- Não voltar a usar `new Date().toISOString().slice(0, 10)` como definição de "hoje" sem avaliar timezone.
+- Datas armazenadas continuam no formato existente; a correção não migrou documentos.
 
 ### Sidebar / overflow
 - O CSS possui regras originais e uma camada corretiva posterior com `!important`.
@@ -356,14 +422,14 @@ Não considerar como funcionalidade confirmada neste baseline:
 
 As próximas melhorias devem ser tratadas uma de cada vez.
 
-### Prioridade técnica
-1. Confirmar e documentar o projeto/deploy de produção da Vercel conectado a este repositório.
-2. Corrigir `todayISO()` para respeitar a data local do escritório sem alterar datas já gravadas.
-3. Revisar a arquitetura de anexos/Storage em alteração isolada, porque o baseline não contém implementação funcional.
-4. Reduzir progressivamente CSS corretivo duplicado, somente depois de testes visuais de regressão.
+### Próxima etapa aprovada
+1. Implementar **Modo Lista de tarefas**, preservando o Kanban e reutilizando os mesmos objetos `tasks`.
 
-### Prioridade de usabilidade — propostas ainda não implementadas neste baseline
-- tela inicial orientada a vencidos, vencimentos de hoje e próximos prazos;
+### Prioridade técnica futura
+1. Revisar a arquitetura de anexos/Storage em alteração isolada, porque o baseline não contém implementação funcional.
+2. Reduzir progressivamente CSS corretivo duplicado, somente depois de testes visuais de regressão.
+
+### Prioridade de usabilidade — ainda não implementadas
 - modo de lista além do Kanban;
 - visão por prazo/calendário;
 - ficha operacional do cliente com tarefas relacionadas;

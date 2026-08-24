@@ -1,7 +1,7 @@
 # Alfa Serviços — roteiro permanente de evolução
 
 > Documento oficial de roadmap e continuidade das evoluções do sistema interno da Alfa Contabilidade.
-> Última atualização: 24/08/2026 às 16:56 (America/Sao_Paulo).
+> Última atualização: 24/08/2026 às 17:11 (America/Sao_Paulo).
 > Este arquivo deve ser mantido e atualizado a cada etapa relevante concluída.
 
 ## 1. Função deste documento
@@ -218,6 +218,38 @@ Alterações desse commit:
 - nenhuma mudança de schema;
 - deploy de produção confirmado com status de sucesso pela integração Vercel/GitHub.
 
+### Produção após a Etapa 1
+
+Commit funcional publicado:
+
+`5ac984554f046ba68e62da923e7ea72ff3cb6097`
+
+Rollback preservado antes da Etapa 1:
+
+`backup/antes-dashboard-inicio-2026-08-24`
+
+Alterações funcionais:
+
+- versão visual `1.7.0`;
+- novo módulo **Início** como primeira tela após o login;
+- indicadores de tarefas vencidas, vencem hoje, próximos 3 dias, alta prioridade e em andamento;
+- listas de atenção e próximos prazos;
+- resumo da equipe para administradores;
+- `Minha fila` para administrador cujo perfil também corresponde a um funcionário;
+- abertura de tarefa diretamente pelo painel reutilizando o modal existente;
+- correção de `todayISO()` para usar `America/Sao_Paulo`;
+- nenhum campo, documento ou coleção nova;
+- nenhuma alteração em `firebaseConfig`, Authentication, Storage ou regras;
+- Preview e deployment de produção da Vercel confirmados com status de sucesso.
+
+Validações realizadas:
+
+- sintaxe JavaScript validada com `node --check`;
+- verificação automática de que o bloco do dashboard não contém `setDoc`, `updateDoc`, `addDoc` ou `deleteDoc`;
+- teste determinístico da virada UTC x horário de São Paulo;
+- revisão do diff do PR;
+- automação visual por navegador não pôde ser executada porque o navegador disponível no ambiente bloqueou páginas locais por política administrativa.
+
 ---
 
 # 7. ROADMAP OFICIAL
@@ -250,90 +282,57 @@ O projeto agora possui documentação técnica, histórico e rollback antes das 
 
 ## ETAPA 1 — Painel Início / Hoje
 
-**Status: 🟡 APROVADA — PRÓXIMA ETAPA A IMPLEMENTAR**
+**Status: ✅ CONCLUÍDA em 24/08/2026**
 
 ### Objetivo
 
 Transformar a primeira tela do sistema em uma central de atenção diária, sem adicionar coleção, documento ou campo ao Firestore.
 
-### Escopo aprovado
+### Implementado
 
-Criar novo módulo:
-
-**🏠 Início**
-
-O painel deverá utilizar as tarefas já carregadas e mostrar pelo menos:
-
+- novo módulo **🏠 Início**;
+- painel aberto automaticamente após login;
+- saudação conforme horário do escritório;
 - tarefas vencidas;
 - tarefas que vencem hoje;
 - tarefas que vencem nos próximos 3 dias;
 - tarefas de prioridade alta;
 - tarefas em andamento;
-- visão das tarefas do funcionário conectado;
-- resumo geral da equipe para administradores.
+- lista de atenção ordenada por urgência;
+- lista de próximos prazos;
+- resumo por responsável para administradores;
+- visão `Minha fila` para administrador associado a funcionário;
+- botão para abrir a tarefa reutilizando o modal existente;
+- botão rápido `+ Novo serviço`;
+- correção segura da data operacional para `America/Sao_Paulo`;
+- comentários `ALFA-DEV` adicionados nos pontos novos;
+- versão visual atualizada para `1.7.0`.
 
-Exemplo conceitual:
+### Segurança confirmada
 
-```text
-Boa tarde, David
+- nenhuma coleção criada;
+- nenhum campo obrigatório criado;
+- nenhuma tarefa antiga regravada pela abertura do painel;
+- valores de `status` preservados;
+- `firebaseConfig` preservado;
+- Authentication preservado;
+- Storage preservado;
+- Kanban existente preservado;
+- Clientes, Relatórios e Equipe preservados.
 
-2 vencidas
-3 vencem hoje
-4 vencem nos próximos 3 dias
-2 prioridades altas
-5 em andamento
-```
+### Publicação
 
-### Ajuste técnico incluído nesta etapa
-
-Corrigir o cálculo da data atual.
-
-Função atual:
-
-```javascript
-new Date().toISOString().slice(0, 10)
-```
-
-Esse cálculo utiliza UTC.
-
-A Etapa 1 deverá utilizar corretamente a data local do navegador/escritório para classificações como:
-
-- vencido;
-- vence hoje;
-- próximos dias.
-
-Essa correção não deve modificar datas históricas já gravadas.
-
-### Restrições
-
-- não criar nova coleção;
-- não criar campos obrigatórios;
-- não regravar tarefas antigas;
-- não alterar os valores de `status`;
-- não alterar `firebaseConfig`;
-- não reconstruir o Kanban;
-- não implementar calendário ainda;
-- não alterar anexos nesta etapa.
-
-### Critérios de aceite
-
-- Início aparece na navegação;
-- administrador vê resumo da equipe;
-- funcionário comum vê corretamente sua situação;
-- tarefa concluída não aparece como vencida;
-- múltiplos responsáveis continuam funcionando;
-- tarefas vencidas são calculadas corretamente;
-- tarefas de hoje são calculadas pela data local;
-- Kanban existente continua funcionando;
-- Clientes, Relatórios e Equipe continuam funcionando;
-- nenhuma gravação adicional no Firestore é gerada apenas ao abrir o painel;
-- desktop e telas menores continuam utilizáveis.
+- rollback: `backup/antes-dashboard-inicio-2026-08-24`;
+- PR: `#3`;
+- commit funcional: `5ac984554f046ba68e62da923e7ea72ff3cb6097`;
+- Preview Vercel: sucesso;
+- produção Vercel: sucesso.
 
 ---
 
 ## ETAPA 2 — Modo Lista de tarefas
 
-**Status: ⚪ PLANEJADA**
+**Status: 🟡 APROVADA COMO PRÓXIMA ETAPA**
 
 ### Objetivo
 
@@ -592,8 +591,8 @@ A ordem atualmente aprovada é:
 | Ordem | Etapa | Status | Risco estimado |
 |---|---|---|---|
 | 0 | Base segura de manutenção | ✅ Concluída | Muito baixo |
-| 1 | Painel Início / Hoje | 🟡 Próxima | Muito baixo |
-| 2 | Modo Lista | ⚪ Planejada | Baixo |
+| 1 | Painel Início / Hoje | ✅ Concluída | Muito baixo |
+| 2 | Modo Lista | 🟡 Próxima | Baixo |
 | 3 | Ficha operacional do cliente | ⚪ Planejada | Baixo |
 | 4 | Calendário / prazos | ⚪ Planejada | Baixo |
 | 5 | Relatórios por pedido/prazo | ⚪ Planejada | Baixo |
@@ -721,4 +720,4 @@ Antes de alterar o sistema:
 
 ## Próxima ação registrada
 
-**Implementar a ETAPA 1 — Painel Início / Hoje, incluindo correção segura da data local, sem alterar o Firestore.**
+**Implementar a ETAPA 2 — Modo Lista de tarefas, preservando o Kanban e reutilizando os mesmos objetos `tasks` já carregados.**
