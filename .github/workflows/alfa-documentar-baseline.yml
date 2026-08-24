@@ -1,0 +1,204 @@
+name: Alfa - documentar baseline
+
+on:
+  push:
+    branches:
+      - chore/base-segura-alfa-2026-08-24
+
+permissions:
+  contents: write
+
+jobs:
+  documentar:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout da branch
+        uses: actions/checkout@v4
+        with:
+          ref: chore/base-segura-alfa-2026-08-24
+          fetch-depth: 0
+
+      - name: Inserir comentários ALFA-DEV sem alterar lógica
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('index.html')
+          original = path.read_text(encoding='utf-8')
+          modified = original
+          inserted = []
+
+          def before(anchor, block):
+              global modified
+              if modified.count(anchor) != 1:
+                  raise SystemExit(f'Âncora inesperada ({modified.count(anchor)}): {anchor[:80]}')
+              modified = modified.replace(anchor, block + anchor, 1)
+              inserted.append(block)
+
+          def after(anchor, block):
+              global modified
+              if modified.count(anchor) != 1:
+                  raise SystemExit(f'Âncora inesperada ({modified.count(anchor)}): {anchor[:80]}')
+              modified = modified.replace(anchor, anchor + block, 1)
+              inserted.append(block)
+
+          after('<body>\n', '''  <!-- ALFA-DEV:
+          BASE TÉCNICA DOCUMENTADA EM 24/08/2026.
+          Este index.html é o ponto de entrada do sistema e deve permanecer compatível com os documentos já existentes no Firebase.
+          Não recriar banco, coleções, usuários ou Storage durante alterações de frontend.
+          Histórico e decisões: CONTEXTO_SISTEMA_ALFA.md.
+          -->\n''')
+
+          before('  <section class="login-screen" id="loginScreen">', '''  <!-- ALFA-DEV:
+          AUTENTICAÇÃO.
+          Esta tela usa Firebase Authentication por e-mail/senha.
+          Os IDs do formulário são consumidos pelo JavaScript; evitar renomeá-los sem revisar os listeners e handleLogin().
+          -->\n''')
+
+          before('    <aside class="sidebar">', '''    <!-- ALFA-DEV:
+          SIDEBAR / NAVEGAÇÃO.
+          Área historicamente sensível a overflow e rolagem. Há regras responsivas e uma correção específica mais abaixo no CSS.
+          Alterações aqui devem ser testadas em desktop e telas menores antes de publicar.
+          -->\n''')
+
+          before('      <section class="board">', '''      <!-- ALFA-DEV:
+          TAREFAS / KANBAN.
+          As três colunas dependem dos status existentes: pendente, andamento e concluido.
+          Não alterar esses valores sem verificar os documentos da coleção "tarefas".
+          -->\n''')
+
+          before('      <section class="management-section" id="clientsSection">', '''      <!-- ALFA-DEV:
+          CLIENTES.
+          O cadastro desta tela lê e grava na coleção "clientes".
+          Os campos alias, name e document são usados também nas tarefas e nos relatórios.
+          -->\n''')
+
+          before('      <section class="management-section" id="reportsSection">', '''      <!-- ALFA-DEV:
+          RELATÓRIOS.
+          Nesta versão o recorte mensal usa requestDate (data do pedido), sem criar coleção própria de relatórios.
+          O relatório é calculado no navegador a partir de "tarefas".
+          -->\n''')
+
+          before('  <div class="modal" id="taskModal">', '''  <!-- ALFA-DEV:
+          MODAL NOVO/EDITAR SERVIÇO.
+          IDs dos campos abaixo alimentam saveTask() e openModal().
+          Preservar os nomes dos campos gravados no Firestore para manter compatibilidade com tarefas antigas.
+          -->\n''')
+
+          before('    .attachment-list {', '''    /* ALFA-DEV:
+             ANEXOS / STORAGE — PONTO DE ATENÇÃO DO BASELINE 24/08/2026.
+             Este arquivo contém apenas estilos visuais para anexos. Não há, nesta versão,
+             import do SDK firebase-storage nem rotina ativa de upload/remoção.
+             Não presumir integração funcional com Storage sem implementar/testar explicitamente.
+             */\n''')
+
+          before('    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";', '''    // ALFA-DEV:
+          // SDK FIREBASE.
+          // Este baseline usa Firebase 10.12.5 para App, Authentication e Cloud Firestore.
+          // Não trocar por Realtime Database. Storage não está importado neste arquivo.
+          // Ver CONTEXTO_SISTEMA_ALFA.md antes de alterar dependências.\n''')
+
+          before('    const defaultEmployees = [', '''    // ALFA-DEV:
+          // EQUIPE / COMPATIBILIDADE.
+          // defaultEmployees é apenas uma base local; a coleção "funcionarios" pode sobrescrever/complementar estes registros.
+          // Nomes existentes são usados como vínculo histórico em tarefas; evitar renomear pessoas já utilizadas.\n''')
+
+          before('    const allowedUserEmails = [', '''    // ALFA-DEV:
+          // AUTORIZAÇÃO NO FRONTEND.
+          // Esta lista não substitui as regras do Firestore nem o Firebase Authentication.
+          // Ao alterar usuários no futuro, conferir de forma coordenada Authentication + frontend + regras, somente com autorização expressa.\n''')
+
+          before('    const firebaseConfig = {', '''    // ALFA-DEV:
+          // FIREBASE CONFIG — PRESERVAÇÃO OBRIGATÓRIA.
+          // Configuração do projeto Firebase atualmente utilizado pelo sistema.
+          // Não alterar estes valores, nem migrar projeto/banco, sem solicitação expressa.
+          // Atualizar o frontend NÃO recria nem apaga o Firestore.\n''')
+
+          before('    function generateReport() {', '''    // ALFA-DEV:
+          // RELATÓRIOS.
+          // Calculados em memória a partir de tasks; atualmente o mês é filtrado por task.requestDate.
+          // Não há escrita em coleção de relatórios nesta função.\n''')
+
+          before('    function exportBackupJson() {', '''    // ALFA-DEV:
+          // BACKUP MANUAL DE DADOS.
+          // Exporta JSON pelo navegador. A rotina de importação abaixo PODE gravar no Firestore,
+          // portanto deve continuar restrita ao administrador e nunca ser usada como teste destrutivo.\n''')
+
+          before('    function getFilteredTasks() {', '''    // ALFA-DEV:
+          // FILTROS DE TAREFAS.
+          // Filtro local sobre dados já carregados: usuário, funcionário, status, prioridade e busca textual.
+          // Alterações devem preservar a restrição de visualização aplicada aos usuários não administradores.\n''')
+
+          before('    async function saveTask(event) {', '''    // ALFA-DEV:
+          // GRAVAÇÃO CRÍTICA — COLEÇÃO "tarefas".
+          // Preservar os campos employee, assignees, clientAlias, clientName, clientDocument,
+          // requestDate, deadline, serviceType, description, status, priority e observation.
+          // Mudanças de schema exigem análise de compatibilidade com documentos existentes.\n''')
+
+          before('    async function handleTaskAction(event) {', '''    // ALFA-DEV:
+          // STATUS / EXCLUSÃO DE TAREFAS.
+          // "next" atualiza somente status + auditoria; "delete" remove o documento da coleção "tarefas".
+          // Não transformar testes de interface em gravações reais sem registro claramente identificado como teste.\n''')
+
+          before('    async function handleLogin(event) {', '''    // ALFA-DEV:
+          // LOGIN.
+          // Valida primeiro a lista local de e-mails e depois autentica no Firebase Authentication.
+          // Erros de login devem ser investigados sem apagar/recriar usuários existentes.\n''')
+
+          before('    function listenTasks() {', '''    // ALFA-DEV:
+          // LEITURA EM TEMPO REAL — "tarefas".
+          // onSnapshot mantém a interface sincronizada com o Firestore.
+          // Esta leitura alimenta Kanban, KPIs, equipe e relatórios.\n''')
+
+          before('    function listenClients() {', '''    // ALFA-DEV:
+          // LEITURA EM TEMPO REAL — "clientes".
+          // Mantém o cadastro e o datalist do formulário de tarefas sincronizados.
+          // Não substituir a origem por lista fixa no HTML.\n''')
+
+          before('    function startFirebase() {', '''    // ALFA-DEV:
+          // INICIALIZAÇÃO CENTRAL DO FIREBASE.
+          // Inicializa App + Auth + Firestore usando o firebaseConfig preservado acima.
+          // Se houver falha de dados, verificar primeiro autenticação, regras e conectividade antes de alterar schema.\n''')
+
+          # Prova de que só comentários foram inseridos: remover exatamente os blocos inseridos
+          # deve reconstruir byte a byte o arquivo de entrada.
+          restored = modified
+          for block in reversed(inserted):
+              if restored.count(block) != 1:
+                  raise SystemExit('Falha de reversibilidade dos comentários ALFA-DEV')
+              restored = restored.replace(block, '', 1)
+          if restored != original:
+              raise SystemExit('Alteração funcional detectada: abortando')
+
+          path.write_text(modified, encoding='utf-8')
+          print(f'Comentários ALFA-DEV inseridos: {len(inserted)}')
+          PY
+
+      - name: Validar JavaScript do módulo
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          text = Path('index.html').read_text(encoding='utf-8')
+          m = re.search(r'<script type="module">(.*?)</script>', text, re.S)
+          if not m:
+              raise SystemExit('script type=module não encontrado')
+          Path('/tmp/alfa-check.mjs').write_text(m.group(1), encoding='utf-8')
+          if text.count('ALFA-DEV') < 20:
+              raise SystemExit('Comentários ALFA-DEV não foram inseridos como esperado')
+          PY
+          node --check /tmp/alfa-check.mjs
+
+      - name: Commitar somente index e remover workflow temporário
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/alfa-documentar-baseline.yml
+          git add index.html
+          git diff --cached --check
+          git commit -m "chore: adiciona pistas ALFA-DEV ao index"
+          git push origin chore/base-segura-alfa-2026-08-24
