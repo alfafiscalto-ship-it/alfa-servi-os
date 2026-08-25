@@ -29,7 +29,7 @@
       --radius-xl: 28px;
       --radius-lg: 20px;
       --radius-md: 14px;
-      --blur: blur(22px);
+      --blur: blur(14px);
     }
 
     * { box-sizing: border-box; }
@@ -1277,8 +1277,12 @@
     }
 
 
+    /* ALFA-DEV PERFORMANCE v1.8.0: seletor sem blur para reduzir repaint/INP. */
+    #employeeSelectModal .modal-card { background: rgba(20,20,31,.985); backdrop-filter:none; -webkit-backdrop-filter:none; box-shadow:0 18px 54px rgba(0,0,0,.42); contain:content; }
+    #employeeSelectModal .modal-header { background: rgba(20,20,31,.99); backdrop-filter:none; -webkit-backdrop-filter:none; }
+
     /* =========================================================
-       PAINEL INÍCIO / HOJE — v1.7.0
+       PAINEL INÍCIO / HOJE — v1.8.0
        ALFA-DEV:
        Camada somente de leitura. Usa tasks/employees já carregados em memória.
        Não criar escrita no Firestore a partir deste painel.
@@ -1741,13 +1745,14 @@ Não recriar banco, coleções, usuários ou Storage durante alterações de fro
 Histórico e decisões: CONTEXTO_SISTEMA_ALFA.md.
 -->
   <!-- ALFA-DEV:
-AUTENTICAÇÃO.
-Esta tela usa Firebase Authentication por e-mail/senha.
-Os IDs do formulário são consumidos pelo JavaScript; evitar renomeá-los sem revisar os listeners e handleLogin().
+AUTENTICAÇÃO COMPARTILHADA — v1.8.0.
+O Firebase Authentication permanece como barreira técnica de segurança, porém o sistema usa uma única conta do escritório.
+Funcionários não possuem mais vínculo entre e-mail e tarefas. A seleção operacional acontece pelo card de funcionário.
+Não abrir regras do Firestore para acesso público.
 -->
   <section class="login-screen" id="loginScreen">
     <div class="login-version-badge">
-      <strong>Versão 1.7.0</strong>
+      <strong>Versão 1.8.0</strong>
       <span>Sistema criado por David Moretti Ferreira.</span>
     </div>
     <div class="login-card">
@@ -1756,19 +1761,16 @@ Os IDs do formulário são consumidos pelo JavaScript; evitar renomeá-los sem r
       <p>Acesso interno para controle de tarefas, prazos e serviços da equipe fiscal/contábil.</p>
 
       <form id="loginForm">
+        <input type="hidden" id="loginEmail" value="alfafiscalto@gmail.com" autocomplete="username">
         <div class="field">
-          <label for="loginEmail">E-mail</label>
-          <input type="email" id="loginEmail" value="alfacontabilidade2014@gmail.com" autocomplete="username" required>
-        </div>
-        <div class="field" style="margin-top: 12px;">
-          <label for="loginPassword">Senha</label>
-          <input type="password" id="loginPassword" autocomplete="current-password" required>
+          <label for="loginPassword">Senha do escritório</label>
+          <input type="password" id="loginPassword" autocomplete="current-password" required autofocus>
         </div>
         <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 16px;">Entrar no sistema</button>
       </form>
 
       <div class="login-helper">
-        O usuário principal deve ser criado no Firebase Authentication. E-mails administrativos: <strong>alfacontabilidade2014@gmail.com</strong> e <strong>alfafiscalto@gmail.com</strong>. A senha não fica gravada no HTML por segurança.
+        <strong>Acesso compartilhado:</strong> a equipe usa uma única conta técnica do Firebase. Depois de entrar, selecione o funcionário pelo card lateral para visualizar ou criar serviços para qualquer pessoa ativa.
       </div>
     </div>
   </section>
@@ -1789,8 +1791,8 @@ Alterações aqui devem ser testadas em desktop e telas menores antes de publica
       </div>
 
       <div class="user-box">
-        <strong>Usuário conectado:</strong><br>
-        <span id="currentUserEmail">-</span>
+        <strong>Acesso do escritório</strong><br>
+        <span id="currentUserEmail">Sessão interna</span>
       </div>
 
       <div class="nav-title">Módulos</div>
@@ -1837,7 +1839,7 @@ Alterações aqui devem ser testadas em desktop e telas menores antes de publica
           <button class="btn btn-secondary" id="exportBackupBtn" type="button" style="display:none;">Exportar backup</button>
           <button class="btn btn-secondary" id="importBackupBtn" type="button" style="display:none;">Importar backup</button>
           <input type="file" id="importBackupInput" accept="application/json,.json" style="display:none;" />
-          <button class="btn btn-secondary" id="resetPasswordBtn" type="button">Alterar senha</button>
+          <button class="btn btn-secondary" id="resetPasswordBtn" type="button">Alterar senha do escritório</button>
           <button class="btn btn-primary" id="openModalBtn">+ Novo serviço</button>
           <button class="btn btn-ghost" id="logoutBtn">Sair</button>
         </div>
@@ -1845,7 +1847,7 @@ Alterações aqui devem ser testadas em desktop e telas menores antes de publica
 
       <div id="systemErrorBox" class="system-error-box"></div>
 
-      <!-- ALFA-DEV: PAINEL INÍCIO / HOJE — v1.7.0.
+      <!-- ALFA-DEV: PAINEL INÍCIO / HOJE — v1.8.0.
       Esta view é SOMENTE DE LEITURA: deriva indicadores das tarefas já carregadas em memória.
       Não adicionar setDoc/updateDoc/addDoc/deleteDoc ao fluxo do painel sem nova aprovação.
       Datas de "hoje" usam America/Sao_Paulo. Histórico: CONTEXTO_SISTEMA_ALFA.md. -->
@@ -2148,7 +2150,7 @@ Preservar os nomes dos campos gravados no Firestore para manter compatibilidade 
           <div class="field full">
             <label for="employeeInput">Funcionário(s)</label>
             <div id="employeeInput" class="employee-multi-grid" role="group" aria-label="Selecionar um ou mais funcionários"></div>
-            <small class="doc-hint">Marque uma ou mais pessoas responsáveis por este serviço. Todos os usuários autorizados podem criar serviço para qualquer funcionário.</small>
+            <small class="doc-hint">Marque uma ou mais pessoas responsáveis. Qualquer pessoa com acesso ao sistema pode criar serviço para qualquer funcionário ativo.</small>
           </div>
           <div class="field">
             <label for="requestDateInput">Data do pedido</label>
@@ -2356,59 +2358,29 @@ Preservar os nomes dos campos gravados no Firestore para manter compatibilidade 
     let employees = defaultEmployees.map(employee => ({ ...employee }));
 
     // ALFA-DEV:
-// AUTORIZAÇÃO NO FRONTEND.
-// Esta lista não substitui as regras do Firestore nem o Firebase Authentication.
-// Ao alterar usuários no futuro, conferir de forma coordenada Authentication + frontend + regras, somente com autorização expressa.
-    const allowedUserEmails = [
-      "alfafiscalto@gmail.com",
-      "alfacontabilidade2014@gmail.com",
-      "morettidavid20@gmail.com",
-      "jhempreendimentos93@gmail.com",
-      "flaviarodriguessoltu92@gmail.com",
-      "joycealmeidabrito01@gmail.com",
-      "julyanarocha@unitins.br"
-    ];
+    // ACESSO COMPARTILHADO DO ESCRITÓRIO — v1.8.0.
+    // O Authentication continua protegendo o Firestore, mas não existe mais perfil por funcionário/e-mail.
+    // A conta abaixo é apenas a credencial técnica do escritório; funcionários são escolhidos na interface.
+    // Não trocar por login anônimo e não abrir regras do Firestore para o público.
+    const OFFICE_LOGIN_EMAIL = "alfafiscalto@gmail.com";
+    const SHARED_ACCESS_PROFILE = { name: "equipe", role: "Acesso compartilhado", employee: null };
 
-    const userProfiles = {
-      "alfafiscalto@gmail.com": { name: "Henrique", role: "Administrador", employee: null },
-      "alfacontabilidade2014@gmail.com": { name: "Henrique", role: "Administrador", employee: null },
-      "morettidavid20@gmail.com": { name: "David", role: "Administrador", employee: null },
-      "jhempreendimentos93@gmail.com": { name: "Amanda", role: "Funcionária", employee: "Amanda" },
-      "flaviarodriguessoltu92@gmail.com": { name: "Flavia", role: "Funcionária", employee: "Flavia" },
-      "joycealmeidabrito01@gmail.com": { name: "Joyce", role: "Funcionária", employee: "Joyce" },
-      "julyanarocha@unitins.br": { name: "Julyana", role: "Funcionária", employee: "Julyana" }
-    };
+    function normalizeEmail(email) { return String(email || "").trim().toLowerCase(); }
+    function isAllowedUser(email) { return normalizeEmail(email) === normalizeEmail(OFFICE_LOGIN_EMAIL); }
+    function isAdminUser() { return Boolean(currentUser && isAllowedUser(currentUser.email)); }
+    function currentEmployeeName() { return null; }
 
     // Os clientes são carregados exclusivamente da coleção "clientes" do Firestore.
     // Não há lista fixa de clientes neste HTML.
-
-
-    function normalizeEmail(email) {
-      return String(email || "").trim().toLowerCase();
-    }
-
-    function isAllowedUser(email) {
-      return allowedUserEmails.includes(normalizeEmail(email));
-    }
-
-    function isAdminUser() {
-      return currentUserProfile?.role === "Administrador";
-    }
-
-    function currentEmployeeName() {
-      return currentUserProfile?.employee || null;
-    }
 
     /*
       CONFIGURAÇÃO NECESSÁRIA NO FIREBASE
 
       1) Firebase Console > Authentication > Sign-in method > habilite Email/Password.
-      2) Authentication > Users > Add user:
-         E-mails administrativos: alfacontabilidade2014@gmail.com e alfafiscalto@gmail.com
-         Senha: defina a senha principal informada pelo escritório.
-      3) Firestore Database > Create database.
-      4) Regras recomendadas: liberar somente usuários autorizados listados no sistema.
-         Cole as regras atualizadas informadas junto com este arquivo no Firestore.
+      2) Authentication > Users: manter a conta técnica alfafiscalto@gmail.com com a senha compartilhada do escritório.
+         Não é necessário criar um usuário Firebase para cada funcionário.
+      3) Firestore Database > manter Cloud Firestore.
+      4) Regras: manter acesso restrito a usuário autenticado/autorizado; NÃO liberar read/write para todos.
       5) Copie as credenciais do app Web e substitua o objeto firebaseConfig abaixo somente se trocar o projeto Firebase.
     */
     // ALFA-DEV:
@@ -2435,6 +2407,7 @@ Preservar os nomes dos campos gravados no Firestore para manter compatibilidade 
     let clients = [];
     let currentReportRows = [];
     let selectedEmployee = "todos";
+    let currentView = "home";
     let editingTaskId = null;
     let editingClientId = null;
     let editingEmployeeId = null;
@@ -3044,23 +3017,11 @@ Preservar os nomes dos campos gravados no Firestore para manter compatibilidade 
 
 
     // ALFA-DEV:
-    // VISIBILIDADE COMPARTILHADA ENTRE TAREFAS E PAINEL INÍCIO.
-    // Mantém a mesma regra já utilizada: admin vê tudo; funcionário vê tarefas
-    // atribuídas a ele e também as que ele próprio criou.
-    function isTaskVisibleToCurrentUser(task) {
-      const createdByCurrentUser = currentUser?.email
-        && normalizeEmail(task.createdBy) === normalizeEmail(currentUser.email);
-      return isAdminUser()
-        || !currentEmployeeName()
-        || taskHasEmployee(task, currentEmployeeName())
-        || createdByCurrentUser;
-    }
-
-    function getDashboardEmployeeName() {
-      if (currentEmployeeName()) return currentEmployeeName();
-      const profileName = String(currentUserProfile?.name || "").trim();
-      return getEmployeeByName(profileName)?.name || null;
-    }
+    // VISIBILIDADE OPERACIONAL COMPARTILHADA — v1.8.0.
+    // Depois do login técnico do escritório, todos podem consultar todas as tarefas.
+    // O recorte por pessoa acontece SOMENTE pelo seletor selectedEmployee.
+    function isTaskVisibleToCurrentUser() { return Boolean(currentUser && isAllowedUser(currentUser.email)); }
+    function getDashboardEmployeeName() { return null; }
 
     function getHomeDeadlineMeta(task) {
       const today = todayISO();
@@ -3168,20 +3129,9 @@ Preservar os nomes dos campos gravados no Firestore para manter compatibilidade 
 
     function renderHomePersonalQueue() {
       const panel = document.getElementById("homePersonalPanel");
-      const title = document.getElementById("homePersonalTitle");
-      if (!panel || !title) return;
-
-      const employeeName = getDashboardEmployeeName();
-      if (!isAdminUser() || !employeeName) {
-        panel.style.display = "none";
-        renderHomeTaskRows("homePersonalList", [], "");
-        return;
-      }
-
-      panel.style.display = "block";
-      title.textContent = `Minha fila — ${employeeName}`;
-      const personalOpen = tasks.filter(task => taskHasEmployee(task, employeeName) && task.status !== "concluido");
-      renderHomeTaskRows("homePersonalList", personalOpen, "Nenhum serviço aberto atribuído diretamente a você.");
+      if (!panel) return;
+      panel.style.display = "none";
+      renderHomeTaskRows("homePersonalList", [], "");
     }
 
     function renderHomeDashboard() {
@@ -3197,13 +3147,13 @@ Preservar os nomes dos campos gravados no Firestore para manter compatibilidade 
       const highPriority = openTasks.filter(task => task.priority === "alta");
       const inProgress = openTasks.filter(task => task.status === "andamento");
 
-      const greetingName = currentUserProfile?.name || currentUser?.email || "equipe";
+      const greetingName = "equipe";
       const greeting = document.getElementById("homeGreeting");
       const summary = document.getElementById("homeSummaryText");
       const attentionTitle = document.getElementById("homeAttentionTitle");
       if (greeting) greeting.textContent = `${getOfficeGreeting()}, ${greetingName}`;
       if (summary) {
-        const subject = isAdminUser() ? "A equipe" : "Você";
+        const subject = "A equipe";
         summary.textContent = `${subject} tem ${overdue.length} ${overdue.length === 1 ? "tarefa vencida" : "tarefas vencidas"}, ${dueToday.length} para hoje e ${inProgress.length} em andamento.`;
       }
       if (attentionTitle) attentionTitle.textContent = isAdminUser() ? "Atenção da equipe" : "Minha fila de atenção";
@@ -3243,26 +3193,19 @@ Preservar os nomes dos campos gravados no Firestore para manter compatibilidade 
       const employeeButton = event.target.closest("[data-home-employee]");
       if (employeeButton && isAdminUser()) {
         selectEmployee(employeeButton.dataset.homeEmployee);
-        setView("tasks");
       }
     }
 
 
     function setView(view) {
-      if (view === "employees" && !isAdminUser()) {
-        showToast("A gestão da equipe é exclusiva do administrador.");
-        view = "tasks";
-      }
+      currentView = view;
       document.querySelectorAll("[data-view]").forEach(btn => btn.classList.toggle("active", btn.dataset.view === view));
       taskSections.forEach(section => { if (section) section.style.display = view === "tasks" ? "" : "none"; });
       homeSection.classList.toggle("active", view === "home");
       clientsSection.classList.toggle("active", view === "clients");
       employeesSection.classList.toggle("active", view === "employees");
       reportsSection.classList.toggle("active", view === "reports");
-      if (view === "home") renderHomeDashboard();
-      if (view === "clients") renderClients();
-      if (view === "employees") renderEmployeesManagement();
-      if (view === "reports") generateReport();
+      render();
     }
 
     function monthValue(dateString) {
@@ -3337,7 +3280,7 @@ Preservar os nomes dos campos gravados no Firestore para manter compatibilidade 
       }
       try {
         await sendPasswordResetEmail(auth, currentUser.email);
-        showToast("Enviamos um link de redefinição de senha para seu e-mail.");
+        showToast("Enviamos um link de redefinição para o e-mail da conta compartilhada do escritório.");
       } catch (error) {
         console.error(error);
         showToast("Não foi possível enviar o link de senha. Confira o Authentication no Firebase.");
@@ -3357,7 +3300,7 @@ Preservar os nomes dos campos gravados no Firestore para manter compatibilidade 
       const timestamp = now.toISOString();
       const backup = {
         sistema: "Alfa Contabilidade - Sistema de Serviços",
-        versao: "1.7.0",
+        versao: "1.8.0",
         exportadoEm: timestamp,
         exportadoPor: currentUser?.email || null,
         observacao: "Backup manual gerado pelo navegador. Para backup automático real, use Firebase/Google Cloud com Cloud Functions ou Cloud Scheduler.",
@@ -3775,10 +3718,8 @@ Preservar os nomes dos campos gravados no Firestore para manter compatibilidade 
       selectedEmployeeLabel.textContent = getEmployeeDisplayName(employeeName);
       selectedEmployeeDot.style.color = getEmployeeColor(employeeName);
       selectedEmployeeCount.textContent = getEmployeeOpenCount(employeeName);
-
-      const admin = isAdminUser() || !currentUserProfile;
-      employeeSelectorBtn.disabled = !admin;
-      employeeSelectorHint.textContent = admin ? "Clique para escolher" : "Restrito ao seu usuário";
+      employeeSelectorBtn.disabled = !currentUser;
+      employeeSelectorHint.textContent = currentUser ? "Clique para escolher" : "Entre no sistema";
     }
 
     function renderEmployeeChoices() {
@@ -3801,10 +3742,7 @@ Preservar os nomes dos campos gravados no Firestore para manter compatibilidade 
     }
 
     function openEmployeeSelectModal() {
-      if (!isAdminUser()) {
-        showToast("Seu usuário visualiza apenas os próprios serviços.");
-        return;
-      }
+      if (!currentUser) { showToast("Entre no sistema para selecionar um funcionário."); return; }
       renderEmployeeChoices();
       employeeSelectModal.classList.add("open");
       document.body.classList.add("modal-is-open");
@@ -3816,20 +3754,11 @@ Preservar os nomes dos campos gravados no Firestore para manter compatibilidade 
     }
 
     function selectEmployee(employeeName, closePicker = false) {
-      const admin = isAdminUser() || !currentUserProfile;
-      const ownEmployee = currentEmployeeName();
-
-      if (!admin) {
-        selectedEmployee = ownEmployee;
-        showToast("Seu usuário visualiza apenas os próprios serviços.");
-      } else {
-        selectedEmployee = employeeName || "todos";
-      }
-
-      updateEmployeeSelector();
-      render();
-
+      selectedEmployee = employeeName || "todos";
       if (closePicker) closeEmployeeSelectModal();
+      updateEmployeeSelector();
+      const showTasks = () => currentView !== "tasks" ? setView("tasks") : render();
+      if (closePicker) requestAnimationFrame(showTasks); else showTasks();
     }
 
     function buildEmployees() {
@@ -3837,74 +3766,38 @@ Preservar os nomes dos campos gravados no Firestore para manter compatibilidade 
       const reportEmployeeInput = document.getElementById("reportEmployeeInput");
       const previousReportEmployee = reportEmployeeInput?.value || "todos";
       if (reportEmployeeInput) reportEmployeeInput.innerHTML = "";
-
-      const admin = isAdminUser() || !currentUserProfile;
-      const ownEmployee = currentEmployeeName();
-
       employees.forEach(employee => {
         const inactive = employee.active === false;
         const label = document.createElement("label");
         label.className = "employee-check";
-        label.innerHTML = `
-          <input type="checkbox" name="taskEmployees" value="${escapeHTML(employee.name)}" ${inactive ? "disabled" : ""}>
-          <span class="employee-check-name">
-            <span class="dot" style="color:${escapeHTML(employee.color)}"></span>
-            <span>${escapeHTML(employee.name)}${inactive ? " · inativo" : ""}</span>
-          </span>
-        `;
+        label.innerHTML = `<input type="checkbox" name="taskEmployees" value="${escapeHTML(employee.name)}" ${inactive ? "disabled" : ""}><span class="employee-check-name"><span class="dot" style="color:${escapeHTML(employee.color)}"></span><span>${escapeHTML(employee.name)}${inactive ? " · inativo" : ""}</span></span>`;
         employeeInput.appendChild(label);
       });
-
       if (reportEmployeeInput) {
-        if (admin) {
-          const reportAll = document.createElement("option");
-          reportAll.value = "todos";
-          reportAll.textContent = "Todos";
-          reportEmployeeInput.appendChild(reportAll);
-        }
-
-        employees.forEach(employee => {
-          const reportOption = document.createElement("option");
-          reportOption.value = employee.name;
-          reportOption.textContent = `${employee.name}${employee.active === false ? " (inativo)" : ""}`;
-          reportEmployeeInput.appendChild(reportOption);
-        });
-
-        reportEmployeeInput.disabled = !admin;
-        const allowedValue = Array.from(reportEmployeeInput.options).some(option => option.value === previousReportEmployee)
-          ? previousReportEmployee
-          : (admin ? "todos" : ownEmployee);
-        reportEmployeeInput.value = admin ? allowedValue : ownEmployee;
+        reportEmployeeInput.innerHTML = `<option value="todos">Todos</option>`;
+        employees.forEach(employee => { const o=document.createElement("option"); o.value=employee.name; o.textContent=`${employee.name}${employee.active === false ? " (inativo)" : ""}`; reportEmployeeInput.appendChild(o); });
+        reportEmployeeInput.disabled = false;
+        reportEmployeeInput.value = Array.from(reportEmployeeInput.options).some(o => o.value === previousReportEmployee) ? previousReportEmployee : "todos";
       }
-
-      selectedEmployee = admin ? (selectedEmployee || "todos") : ownEmployee;
-      if (!selectedEmployee || (!admin && selectedEmployee !== ownEmployee)) selectedEmployee = admin ? "todos" : ownEmployee;
-
+      if (!selectedEmployee || (selectedEmployee !== "todos" && !getEmployeeByName(selectedEmployee))) selectedEmployee = "todos";
       updateEmployeeSelector();
     }
 
     // ALFA-DEV:
 // FILTROS DE TAREFAS.
-// Filtro local sobre dados já carregados: usuário, funcionário, status, prioridade e busca textual.
-// Alterações devem preservar a restrição de visualização aplicada aos usuários não administradores.
+// Filtro local sobre dados já carregados: funcionário, status, prioridade e busca textual.
+// v1.8.0: não há mais restrição por e-mail de funcionário; todos usam a conta compartilhada.
     function getFilteredTasks() {
       const searchTerm = document.getElementById("searchInput").value.trim().toLowerCase();
       const statusFilter = document.getElementById("statusFilter").value;
       const priorityFilter = document.getElementById("priorityFilter").value;
-
       return tasks.filter(task => {
         const assigneeText = getTaskAssigneeText(task);
-        const createdByCurrentUser = currentUser?.email && normalizeEmail(task.createdBy) === normalizeEmail(currentUser.email);
-        const byLoggedUser = isTaskVisibleToCurrentUser(task);
-        const byEmployee = selectedEmployee === "todos" || taskHasEmployee(task, selectedEmployee) || (!isAdminUser() && createdByCurrentUser);
+        const byEmployee = selectedEmployee === "todos" || taskHasEmployee(task, selectedEmployee);
         const byStatus = statusFilter === "todos" || task.status === statusFilter;
         const byPriority = priorityFilter === "todas" || task.priority === priorityFilter;
-        const text = [assigneeText, task.clientAlias, task.clientName, task.clientDocument, task.serviceType, task.description, task.observation, task.status, task.priority]
-          .filter(Boolean)
-          .join(" ")
-          .toLowerCase();
-        const bySearch = !searchTerm || text.includes(searchTerm);
-        return byLoggedUser && byEmployee && byStatus && byPriority && bySearch;
+        const text = [assigneeText, task.clientAlias, task.clientName, task.clientDocument, task.serviceType, task.description, task.observation, task.status, task.priority].filter(Boolean).join(" ").toLowerCase();
+        return byEmployee && byStatus && byPriority && (!searchTerm || text.includes(searchTerm));
       });
     }
 
@@ -3929,7 +3822,6 @@ Preservar os nomes dos campos gravados no Firestore para manter compatibilidade 
       document.getElementById("countConcluido").textContent = concluido;
 
       updateEmployeeSelector();
-      if (employeeSelectModal?.classList.contains("open")) renderEmployeeChoices();
     }
 
     function renderHeader() {
@@ -4009,17 +3901,23 @@ Preservar os nomes dos campos gravados no Firestore para manter compatibilidade 
       columnTasks.forEach(task => list.appendChild(createTaskCard(task)));
     }
 
-    function render() {
-      if (selectedEmployee === "todos") {
-        document.documentElement.style.setProperty("--red", "#e50914");
-      }
+    function renderTaskView() {
+      if (selectedEmployee === "todos") document.documentElement.style.setProperty("--red", "#e50914");
       renderHeader();
       const filtered = getFilteredTasks();
       renderStats(filtered);
       renderColumn("listPendente", filtered.filter(task => task.status === "pendente"));
       renderColumn("listAndamento", filtered.filter(task => task.status === "andamento"));
       renderColumn("listConcluido", filtered.filter(task => task.status === "concluido"));
-      renderHomeDashboard();
+    }
+
+    function render() {
+      updateEmployeeSelector();
+      if (currentView === "tasks") return renderTaskView();
+      if (currentView === "home") return renderHomeDashboard();
+      if (currentView === "clients") return renderClients();
+      if (currentView === "employees") return renderEmployeesManagement();
+      if (currentView === "reports") return generateReport();
     }
 
     function openModal(task = null) {
@@ -4027,19 +3925,11 @@ Preservar os nomes dos campos gravados no Firestore para manter compatibilidade 
       modalTitle.textContent = task ? "Editar serviço" : "Novo serviço";
       document.getElementById("taskId").value = task?.id || "";
 
-      const defaultEmployee = currentUserProfile?.employee || getActiveEmployees()[0]?.name || employees[0]?.name || "";
-      const admin = isAdminUser();
+      const defaultEmployee = getActiveEmployees()[0]?.name || employees[0]?.name || "";
       let selectedNames = [];
-
-      if (task) {
-        selectedNames = getTaskAssignees(task);
-      } else if (!admin && currentEmployeeName()) {
-        selectedNames = [currentEmployeeName()];
-      } else if (admin && selectedEmployee && selectedEmployee !== "todos" && getEmployeeByName(selectedEmployee)?.active !== false) {
-        selectedNames = [selectedEmployee];
-      } else {
-        selectedNames = [defaultEmployee];
-      }
+      if (task) selectedNames = getTaskAssignees(task);
+      else if (selectedEmployee && selectedEmployee !== "todos" && getEmployeeByName(selectedEmployee)?.active !== false) selectedNames = [selectedEmployee];
+      else selectedNames = [defaultEmployee];
 
       setSelectedTaskEmployees(selectedNames);
       document.getElementById("requestDateInput").value = task?.requestDate || todayISO();
@@ -4210,31 +4100,12 @@ Preservar os nomes dos campos gravados no Firestore para manter compatibilidade 
     }
 
     // ALFA-DEV:
-// LOGIN.
-// Valida primeiro a lista local de e-mails e depois autentica no Firebase Authentication.
-// Erros de login devem ser investigados sem apagar/recriar usuários existentes.
+    // LOGIN COMPARTILHADO — v1.8.0. A interface pede só a senha; o e-mail técnico fica fixo.
     async function handleLogin(event) {
       event.preventDefault();
-
-      if (!firebaseReady) {
-        showToast("Configure o Firebase antes de fazer login.");
-        return;
-      }
-
-      const email = document.getElementById("loginEmail").value.trim();
-      const password = document.getElementById("loginPassword").value;
-
-      if (!isAllowedUser(email)) {
-        showToast("Este e-mail ainda não está autorizado no sistema. Inclua o e-mail no código e nas regras do Firestore.");
-        return;
-      }
-
-      try {
-        await signInWithEmailAndPassword(auth, email, password);
-      } catch (error) {
-        console.error(error);
-        showToast("Login não autorizado. Confira e-mail, senha e Authentication no Firebase.");
-      }
+      if (!firebaseReady) { showToast("Configure o Firebase antes de fazer login."); return; }
+      try { await signInWithEmailAndPassword(auth, OFFICE_LOGIN_EMAIL, document.getElementById("loginPassword").value); }
+      catch (error) { console.error(error); showToast("Senha não autorizada. Confira a senha da conta do escritório no Firebase Authentication."); }
     }
 
     async function handleLogout() {
@@ -4245,28 +4116,23 @@ Preservar os nomes dos campos gravados no Firestore para manter compatibilidade 
 
     function showApp(user) {
       currentUser = user;
-      currentUserProfile = userProfiles[normalizeEmail(user.email)] || { name: user.email, role: "Usuário autorizado", employee: null };
-      currentUserEmail.innerHTML = `${escapeHTML(currentUserProfile.name)}<br><small>${escapeHTML(user.email)} · ${escapeHTML(currentUserProfile.role)}</small>`;
-      selectedEmployee = isAdminUser() ? "todos" : currentEmployeeName();
+      currentUserProfile = { ...SHARED_ACCESS_PROFILE };
+      currentUserEmail.innerHTML = `Alfa Contabilidade<br><small>Acesso compartilhado do escritório</small>`;
+      selectedEmployee = "todos";
       buildEmployees();
-      document.getElementById("allTasksBtn").style.display = isAdminUser() ? "inline-flex" : "none";
-      document.getElementById("exportBackupBtn").style.display = isAdminUser() ? "inline-flex" : "none";
-      document.getElementById("importBackupBtn").style.display = isAdminUser() ? "inline-flex" : "none";
-      document.getElementById("viewEmployeesBtn").style.display = isAdminUser() ? "flex" : "none";
+      ["allTasksBtn","exportBackupBtn","importBackupBtn"].forEach(id => document.getElementById(id).style.display = "inline-flex");
+      document.getElementById("viewEmployeesBtn").style.display = "flex";
       loginScreen.style.display = "none";
       appShell.classList.add("visible");
       setConnection("online", "Conectado ao Firebase");
       setView("home");
-      listenEmployees();
-      listenTasks();
-      listenClients();
-      remindAdminBackup();
+      listenEmployees(); listenTasks(); listenClients(); remindAdminBackup();
     }
 
     function showLogin() {
       currentUser = null;
       currentUserProfile = null;
-      currentUserEmail.textContent = "-";
+      currentUserEmail.textContent = "Sessão interna";
       appShell.classList.remove("visible");
       loginScreen.style.display = "grid";
       if (unsubscribe) unsubscribe();
@@ -4302,7 +4168,6 @@ Preservar os nomes dos campos gravados no Firestore para manter compatibilidade 
           });
         const rosterChanged = enrichEmployeesFromTasks();
         if (rosterChanged && !taskModal.classList.contains("open")) buildEmployees();
-        renderEmployeesManagement();
         render();
       }, (error) => {
         console.error(error);
@@ -4320,14 +4185,12 @@ Preservar os nomes dos campos gravados no Firestore para manter compatibilidade 
         employees = mergeEmployeeRoster(firebaseEmployees);
         enrichEmployeesFromTasks();
         buildEmployees();
-        renderEmployeesManagement();
         render();
       }, (error) => {
         console.error(error);
         employees = mergeEmployeeRoster([]);
         enrichEmployeesFromTasks();
         buildEmployees();
-        renderEmployeesManagement();
         render();
         if (isAdminUser()) {
           showToast("Equipe carregada no modo compatível. A coleção funcionarios ainda não está liberada nas regras do Firestore.");
@@ -4344,13 +4207,13 @@ Preservar os nomes dos campos gravados no Firestore para manter compatibilidade 
       unsubscribeClients = onSnapshot(collection(db, "clientes"), (snapshot) => {
         const firebaseClients = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data(), source: "firebase" }));
         clients = getMergedClients(firebaseClients);
-        renderClients();
         buildClientDatalist();
+        if (currentView === "clients") renderClients();
       }, (error) => {
         console.error(error);
         showToast(`Não foi possível carregar clientes${error?.code ? ` (${error.code})` : ""}. O cadastro de serviço continua disponível.`);
         clients = getMergedClients([]);
-        renderClients();
+        if (currentView === "clients") renderClients();
       });
     }
 
@@ -4373,12 +4236,8 @@ Preservar os nomes dos campos gravados no Firestore para manter compatibilidade 
         setConnection("online", "Firebase pronto para login");
 
         onAuthStateChanged(auth, (user) => {
-          if (user && isAllowedUser(user.email)) {
-            showApp(user);
-          } else {
-            if (user && !isAllowedUser(user.email)) signOut(auth);
-            showLogin();
-          }
+          if (user && isAllowedUser(user.email)) showApp(user);
+          else { if (user && !isAllowedUser(user.email)) signOut(auth); showLogin(); }
         });
       } catch (error) {
         console.error(error);
