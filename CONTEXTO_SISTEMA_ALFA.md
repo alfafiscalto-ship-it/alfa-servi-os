@@ -1,8 +1,8 @@
 # CONTEXTO_SISTEMA_ALFA
 
 > Memória técnica do sistema interno Alfa Contabilidade.
-> Última atualização: 24/08/2026 às 17:11 (America/Sao_Paulo).
-> Fonte técnica desta revisão: `index.html` anexado na conversa em 24/08/2026 e confirmado como idêntico ao `index.html` do branch `main` no momento do baseline.
+> Última atualização: 25/08/2026 (America/Sao_Paulo).
+> Fonte técnica da revisão funcional 1.8.0: `index.html` anexado em 25/08/2026, confirmado como idêntico ao blob `aad4083fc0d71e77eefebfa55c2df74fe2c18479` do `main` antes da alteração.
 > Este documento deve ser lido antes de alterações relevantes no frontend.
 
 ## 1. Arquitetura
@@ -16,10 +16,10 @@
   - commit: `9c2dbc5cf622d22426af68f19ed6ef805eebd2fa`;
   - blob do `index.html`: `13111dd49b22700ceac5ec43f3b3eef625e13a70`;
   - branch de rollback: `backup/antes-contexto-alfa-2026-08-24`.
-- Release funcional atual após a Etapa 1:
-  - versão visual: `1.7.0`;
-  - commit funcional: `5ac984554f046ba68e62da923e7ea72ff3cb6097`;
-  - rollback anterior à Etapa 1: `backup/antes-dashboard-inicio-2026-08-24`.
+- Release funcional atual após a Etapa 2:
+  - versão visual: `1.8.0`;
+  - commit funcional: `37e53d951af321103a8cb18c62b2fe89aa8e8d6a`;
+  - rollback anterior à Etapa 2: `backup/antes-acesso-compartilhado-2026-08-25`.
 
 ### Vercel
 - É a plataforma definida para hospedagem/deploy do sistema.
@@ -28,10 +28,13 @@
 - Após alterações no `main`, conferir o deployment automático antes de considerar a publicação concluída.
 
 ### Firebase Authentication
-- Responsável pelo login com e-mail e senha.
-- O frontend mantém uma lista local de e-mails autorizados e perfis.
-- Essa lista local NÃO substitui o Authentication nem as regras de segurança do Firestore.
-- Não apagar ou recriar usuários para corrigir problemas de frontend.
+- Continua responsável pela barreira de entrada do sistema.
+- Desde a versão `1.8.0`, o frontend usa uma única conta técnica: `alfafiscalto@gmail.com`.
+- A interface pede apenas a senha do escritório; o e-mail técnico fica fixo no código.
+- Não existe mais vínculo entre e-mail Firebase e funcionário.
+- Funcionários são selecionados operacionalmente pelo card lateral.
+- Usuários antigos do Firebase Authentication não foram apagados automaticamente e não são necessários para a operação diária do frontend 1.8.0.
+- Não abrir regras do Firestore para substituir o Authentication.
 
 ### Cloud Firestore
 - Banco utilizado pelo sistema.
@@ -74,10 +77,13 @@ O sistema atual é um arquivo único com HTML, CSS e JavaScript `type="module"`.
   - `firebase-firestore`.
 - O objeto `firebaseConfig` deve ser preservado integralmente, salvo solicitação expressa para troca de projeto.
 
-### Usuários e perfis
-- `allowedUserEmails`: autorização adicional no frontend.
-- `userProfiles`: nome, perfil e vínculo com funcionário.
-- Alterações futuras em acesso devem ser coordenadas com Authentication e regras, quando expressamente autorizadas.
+### Acesso compartilhado
+- `OFFICE_LOGIN_EMAIL`: conta técnica fixa usada pelo frontend.
+- `SHARED_ACCESS_PROFILE`: perfil operacional compartilhado.
+- `allowedUserEmails` e `userProfiles` foram removidos na versão 1.8.0.
+- Todos os usuários que conhecem a senha do escritório entram na mesma sessão técnica e podem selecionar qualquer funcionário.
+- O seletor de funcionário define o recorte operacional das tarefas; ele não altera a identidade do Firebase.
+- Todos podem criar serviços para qualquer funcionário ativo e selecionar múltiplos responsáveis.
 
 ### Painel Início / Hoje
 - Tela: `#homeSection`.
@@ -86,7 +92,7 @@ O sistema atual é um arquivo único com HTML, CSS e JavaScript `type="module"`.
 - É uma camada somente de leitura sobre `tasks` e `employees` já carregados.
 - Funções relevantes: `renderHomeDashboard()`, `renderHomeTaskRows()`, `renderHomeTeamSummary()`, `renderHomePersonalQueue()`, `handleHomeAction()`, `isTaskVisibleToCurrentUser()` e `getDashboardEmployeeName()`.
 - Indicadores: vencidas, vencem hoje, próximos 3 dias, alta prioridade e em andamento.
-- Administradores também recebem resumo por responsável.
+- A sessão compartilhada recebe o resumo por responsável.
 - O painel não cria coleção, documento ou campo e não grava no Firestore apenas por ser aberto.
 - Botões do painel reutilizam fluxos existentes, como `openModal()` e a view de tarefas.
 
@@ -226,10 +232,10 @@ Funcionalidades efetivamente encontradas no código:
 - login por Firebase Authentication;
 - painel **Início / Hoje** como primeira tela pós-login;
 - indicadores derivados de vencimento, hoje, próximos 3 dias, alta prioridade e andamento;
-- resumo operacional da equipe para administradores;
-- visão `Minha fila` quando o perfil administrativo corresponde a funcionário existente;
+- resumo operacional da equipe no acesso compartilhado;
+- seleção operacional de funcionário pelo card lateral;
 - data operacional calculada em `America/Sao_Paulo`;
-- restrição adicional de e-mails no frontend;
+- acesso compartilhado por uma única conta técnica do Firebase;
 - sessão acompanhada por `onAuthStateChanged`;
 - visualização de tarefas em Kanban;
 - múltiplos responsáveis em tarefa via `assignees`;
@@ -245,7 +251,7 @@ Funcionalidades efetivamente encontradas no código:
 - filtro por status;
 - filtro por prioridade;
 - seleção de funcionário;
-- restrição de visualização para usuário não administrador conforme perfil local;
+- todos os usuários da sessão compartilhada podem visualizar tarefas de qualquer funcionário e criar serviços para qualquer responsável ativo;
 - cadastro, edição, exclusão e importação JSON de clientes;
 - validação local de CPF/CNPJ;
 - gestão de equipe;
@@ -338,6 +344,44 @@ Não considerar como funcionalidade confirmada neste baseline:
 
 ---
 
+### 25/08/2026 — Etapa 2: Acesso compartilhado + desempenho
+**Objetivo:** simplificar o uso diário eliminando a necessidade de um usuário Firebase por funcionário e reduzir atrasos de interação observados no seletor de funcionário.
+
+**Solução aplicada**
+- versão visual `1.8.0`;
+- conta técnica única `alfafiscalto@gmail.com`;
+- tela de login passou a pedir somente a senha do escritório;
+- removidos `allowedUserEmails` e `userProfiles`;
+- funcionário deixou de ser inferido pelo e-mail autenticado;
+- todos podem selecionar qualquer funcionário ou Todos;
+- ao escolher um funcionário, o sistema fecha o seletor e abre as tarefas filtradas por aquele nome;
+- todos podem atribuir novos serviços a qualquer funcionário ativo e manter múltiplos responsáveis;
+- `Minha fila` vinculada a e-mail foi desativada;
+- `render()` passou a atualizar apenas a view atualmente visível;
+- removidas reconstruções redundantes do Kanban, Dashboard, equipe e seletor;
+- seleção usa `requestAnimationFrame` depois do fechamento do modal;
+- blur global reduzido e modal do seletor sem `backdrop-filter`.
+
+**Publicação**
+- rollback: `backup/antes-acesso-compartilhado-2026-08-25`;
+- PR: `#5`;
+- commit funcional: `37e53d951af321103a8cb18c62b2fe89aa8e8d6a`;
+- Preview Vercel: sucesso;
+- produção Vercel: sucesso.
+
+**Validação**
+- arquivo anexado confirmado idêntico ao `main` antes da mudança;
+- JavaScript validado com `node --check`;
+- diff final contém somente `index.html`;
+- nenhuma escrita de teste foi realizada no Firestore;
+- melhoria foi direcionada ao INP observado no seletor, mas o ganho real deve continuar sendo acompanhado no uso normal da equipe.
+
+**Ponto de auditoria**
+- `createdBy` e `updatedBy` passam a identificar a conta técnica compartilhada, não a pessoa que estava usando o computador;
+- se identificação individual voltar a ser necessária, criar uma camada operacional específica sem obrigar um usuário Firebase por funcionário.
+
+---
+
 ## 5. Decisões técnicas permanentes
 
 1. GitHub é a fonte oficial do código.
@@ -358,6 +402,9 @@ Não considerar como funcionalidade confirmada neste baseline:
 16. Problemas de leitura de dados devem levantar primeiro hipótese de autenticação, regras ou conectividade.
 17. Problemas de layout devem ser corrigidos sem alterar schema/dados.
 18. Novas funcionalidades não devem ser misturadas com refatorações estéticas não relacionadas.
+19. O modelo operacional atual usa uma única conta técnica Firebase e seleção de funcionário na interface.
+20. Simplificar login nunca autoriza abrir regras do Firestore para o público.
+21. A conta compartilhada não fornece auditoria individual por pessoa física.
 
 ---
 
@@ -367,10 +414,17 @@ Não considerar como funcionalidade confirmada neste baseline:
 - Não alterar sem solicitação expressa.
 - A presença de `storageBucket` não significa que o Storage esteja funcionalmente implementado.
 
-### Autorização
-- Existem duas camadas visíveis no frontend: `allowedUserEmails` e `userProfiles`.
-- As regras reais de acesso também dependem do Firebase.
-- Evitar mudanças parciais que deixem frontend e backend inconsistentes.
+### Autorização / acesso compartilhado
+- `allowedUserEmails` e `userProfiles` não existem mais no frontend 1.8.0.
+- A conta técnica `alfafiscalto@gmail.com` continua autenticada pelo Firebase Authentication.
+- As regras do Firestore continuam sendo a proteção do backend e não devem ser abertas.
+- Funcionário selecionado no card é apenas um filtro operacional, não uma identidade de segurança.
+- Usuários Firebase antigos podem permanecer cadastrados, mas o frontend diário não depende deles.
+
+### Auditoria por usuário
+- Tarefas continuam gravando `createdBy` e `updatedBy`.
+- Com login compartilhado, esses campos registram `alfafiscalto@gmail.com` e não distinguem Henrique, David, Flavia etc.
+- Não interpretar esses campos como identificação individual enquanto o modelo compartilhado estiver ativo.
 
 ### Campo `employee` + `assignees`
 - O sistema mantém `employee` como primeiro responsável e `assignees` como lista.
@@ -408,7 +462,9 @@ Não considerar como funcionalidade confirmada neste baseline:
 
 ### Backup JSON
 - A importação escreve no Firestore.
-- Deve permanecer administrativa.
+- Deve permanecer uma operação de alto cuidado.
+- Na versão 1.8.0, a mesma sessão compartilhada ainda enxerga as ferramentas administrativas existentes.
+- Se o escritório quiser separar operação e administração no futuro, usar uma credencial administrativa adicional é preferível a voltar ao modelo de um login por funcionário.
 - Não confundir rollback de código (Git) com restauração de dados (JSON).
 
 ### Firebase Storage / anexos

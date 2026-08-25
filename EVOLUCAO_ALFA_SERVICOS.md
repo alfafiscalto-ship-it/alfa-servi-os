@@ -1,7 +1,7 @@
 # Alfa Serviços — roteiro permanente de evolução
 
 > Documento oficial de roadmap e continuidade das evoluções do sistema interno da Alfa Contabilidade.
-> Última atualização: 24/08/2026 às 17:11 (America/Sao_Paulo).
+> Última atualização: 25/08/2026 (America/Sao_Paulo).
 > Este arquivo deve ser mantido e atualizado a cada etapa relevante concluída.
 
 ## 1. Função deste documento
@@ -85,11 +85,15 @@ Não realizar upload manual do site diretamente na Vercel quando a integração 
 
 ### Login
 
-**Firebase Authentication**
+**Firebase Authentication — acesso compartilhado**
 
-- autenticação por e-mail e senha;
-- usuários existentes devem ser preservados;
-- problemas de frontend não justificam apagar ou recriar usuários.
+- o Firebase Authentication continua sendo a barreira técnica de segurança;
+- desde a versão `1.8.0`, o frontend usa uma única conta técnica do escritório: `alfafiscalto@gmail.com`;
+- a tela de login pede somente a senha do escritório;
+- funcionários não precisam mais possuir usuário próprio no Firebase;
+- a seleção de Henrique, David, Amanda, Flavia, Joyce, Julyana, Laila, Mariana ou Todos é operacional e acontece na interface;
+- usuários antigos do Authentication não foram apagados automaticamente e podem permanecer cadastrados;
+- nunca substituir essa simplificação por regras públicas de Firestore.
 
 ### Banco de dados
 
@@ -138,8 +142,8 @@ Contrato atual a preservar:
 - IDs existentes;
 - campos existentes;
 - `firebaseConfig` atual;
-- usuários e perfis autorizados;
-- autenticação por e-mail e senha.
+- conta técnica compartilhada autorizada;
+- autenticação por e-mail e senha no Firebase, sem vínculo entre e-mail e funcionário.
 
 Uma melhoria pode ler, filtrar, ordenar e cruzar os dados existentes no navegador sem modificar o banco.
 
@@ -250,6 +254,40 @@ Validações realizadas:
 - revisão do diff do PR;
 - automação visual por navegador não pôde ser executada porque o navegador disponível no ambiente bloqueou páginas locais por política administrativa.
 
+### Produção após a Etapa 2
+
+Commit funcional publicado:
+
+`37e53d951af321103a8cb18c62b2fe89aa8e8d6a`
+
+Rollback preservado antes da Etapa 2:
+
+`backup/antes-acesso-compartilhado-2026-08-25`
+
+Alterações funcionais:
+
+- versão visual `1.8.0`;
+- login operacional simplificado para uma única conta técnica `alfafiscalto@gmail.com`;
+- frontend não mantém mais `allowedUserEmails` nem `userProfiles`;
+- funcionários deixaram de depender de e-mail próprio no Firebase;
+- qualquer pessoa com a senha do escritório pode selecionar qualquer funcionário pelo card lateral;
+- selecionar um nome abre a tela de tarefas já filtrada por esse responsável;
+- qualquer pessoa autenticada pode criar serviço para qualquer funcionário ativo e selecionar múltiplos responsáveis;
+- `Minha fila` vinculada ao usuário/e-mail foi removida da operação;
+- somente a view visível passa a ser renderizada;
+- fechamento do seletor ocorre antes da reconstrução do Kanban;
+- renderização é adiada para o frame seguinte ao fechar o seletor;
+- removidos renders duplicados e reconstruções desnecessárias;
+- blur global reduzido e o seletor de funcionário deixou de usar `backdrop-filter`, visando reduzir repaint/INP;
+- nenhuma coleção, campo ou documento foi migrado;
+- `firebaseConfig`, Storage e regras foram preservados;
+- Preview e produção Vercel confirmados com sucesso.
+
+Decisão importante de auditoria:
+
+- `createdBy` e `updatedBy` continuam existindo, mas passam a registrar a conta compartilhada do escritório, não a pessoa física que realizou a ação;
+- caso a Alfa queira identificação individual no futuro, isso deverá ser resolvido por uma camada operacional própria, sem voltar obrigatoriamente a criar um usuário Firebase para cada funcionário.
+
 ---
 
 # 7. ROADMAP OFICIAL
@@ -330,7 +368,58 @@ Transformar a primeira tela do sistema em uma central de atenção diária, sem 
 
 ---
 
-## ETAPA 2 — Modo Lista de tarefas
+## ETAPA 2 — Acesso compartilhado + desempenho
+
+**Status: ✅ CONCLUÍDA em 25/08/2026**
+
+### Objetivo
+
+Eliminar a necessidade de manter um usuário Firebase por funcionário e reduzir a sensação de travamento nas interações mais frequentes, sem abrir o Firestore ao público.
+
+### Implementado
+
+- uma única conta técnica do escritório no Firebase Authentication;
+- login visual solicita apenas a senha do escritório;
+- removidos vínculos `e-mail -> funcionário` do frontend;
+- todos podem selecionar qualquer funcionário pelo card lateral;
+- a seleção abre diretamente as tarefas daquele responsável;
+- todos podem criar serviços para qualquer funcionário ativo;
+- múltiplos responsáveis continuam suportados;
+- funcionários inativos continuam disponíveis apenas no histórico;
+- painel e filtros usam o funcionário selecionado, não o e-mail autenticado;
+- renderização restrita à view aberta;
+- redução de renders duplicados;
+- seletor fecha antes do Kanban ser reconstruído;
+- render pós-seleção usa `requestAnimationFrame`;
+- modal do seletor deixou de usar blur de fundo;
+- blur global reduzido de 22px para 14px;
+- versão visual `1.8.0`.
+
+### Segurança e compatibilidade
+
+- Firebase Authentication NÃO foi removido;
+- Firestore NÃO foi aberto para acesso público;
+- `firebaseConfig` preservado;
+- coleções `tarefas`, `clientes` e `funcionarios` preservadas;
+- campos `employee` e `assignees` preservados;
+- usuários antigos do Firebase não foram apagados;
+- nenhuma tarefa antiga foi migrada ou regravada apenas por causa da mudança de acesso.
+
+### Auditoria
+
+Com a conta compartilhada, `createdBy` e `updatedBy` identificam a conta técnica do escritório. Eles não identificam qual funcionário estava fisicamente usando o navegador.
+
+### Publicação
+
+- rollback: `backup/antes-acesso-compartilhado-2026-08-25`;
+- PR: `#5`;
+- commit funcional: `37e53d951af321103a8cb18c62b2fe89aa8e8d6a`;
+- Preview Vercel: sucesso;
+- produção Vercel: sucesso.
+
+---
+
+## ETAPA 3 — Modo Lista de tarefas
 
 **Status: 🟡 APROVADA COMO PRÓXIMA ETAPA**
 
@@ -363,7 +452,7 @@ Não criar uma segunda base de tarefas.
 
 ---
 
-## ETAPA 3 — Ficha operacional do cliente
+## ETAPA 4 — Ficha operacional do cliente
 
 **Status: ⚪ PLANEJADA**
 
@@ -389,7 +478,7 @@ Primeira versão deve cruzar `clientes` e `tarefas` localmente, sem alterar sche
 
 ---
 
-## ETAPA 4 — Calendário / visão de prazos
+## ETAPA 5 — Calendário / visão de prazos
 
 **Status: ⚪ PLANEJADA**
 
@@ -411,7 +500,7 @@ Usar `deadline` existente antes de considerar qualquer campo novo.
 
 ---
 
-## ETAPA 5 — Relatórios por pedido ou prazo
+## ETAPA 6 — Relatórios por pedido ou prazo
 
 **Status: ⚪ PLANEJADA**
 
@@ -440,7 +529,7 @@ Período baseado em:
 
 ---
 
-## ETAPA 6 — Busca global
+## ETAPA 7 — Busca global
 
 **Status: ⚪ PLANEJADA**
 
@@ -469,7 +558,7 @@ A primeira versão deve pesquisar somente os dados já carregados no navegador.
 
 ---
 
-## ETAPA 7 — Administração organizada
+## ETAPA 8 — Administração organizada
 
 **Status: ⚪ PLANEJADA**
 
@@ -489,11 +578,11 @@ Criar área administrativa para ações como:
 
 ### Atenção
 
-A importação de backup grava no Firestore e deve continuar protegida e claramente diferenciada das funções operacionais.
+A importação de backup grava no Firestore e deve continuar protegida e claramente diferenciada das funções operacionais. Na versão 1.8.0 a sessão compartilhada ainda possui as ferramentas administrativas existentes; uma separação futura pode usar no máximo uma credencial administrativa adicional, sem voltar ao modelo de um usuário por funcionário.
 
 ---
 
-## ETAPA 8 — Anexos / Firebase Storage
+## ETAPA 9 — Anexos / Firebase Storage
 
 **Status: ⚠️ PLANEJADA — EXIGE ANÁLISE ESPECÍFICA**
 
@@ -535,7 +624,7 @@ Não alterar regras do Storage nem apagar arquivos sem autorização expressa.
 
 ---
 
-## ETAPA 9 — Limpeza gradual da arquitetura do frontend
+## ETAPA 10 — Limpeza gradual da arquitetura do frontend
 
 **Status: ⚪ PLANEJADA**
 
@@ -564,7 +653,7 @@ Cada limpeza deve provar que não modificou o comportamento esperado.
 
 ---
 
-## ETAPA 10 — Gestão avançada
+## ETAPA 11 — Gestão avançada
 
 **Status: 🔵 FUTURA — NÃO IMPLEMENTAR AUTOMATICAMENTE**
 
@@ -592,15 +681,16 @@ A ordem atualmente aprovada é:
 |---|---|---|---|
 | 0 | Base segura de manutenção | ✅ Concluída | Muito baixo |
 | 1 | Painel Início / Hoje | ✅ Concluída | Muito baixo |
-| 2 | Modo Lista | 🟡 Próxima | Baixo |
-| 3 | Ficha operacional do cliente | ⚪ Planejada | Baixo |
-| 4 | Calendário / prazos | ⚪ Planejada | Baixo |
-| 5 | Relatórios por pedido/prazo | ⚪ Planejada | Baixo |
-| 6 | Busca global | ⚪ Planejada | Baixo |
-| 7 | Administração organizada | ⚪ Planejada | Médio |
-| 8 | Anexos / Storage | ⚠️ Planejada | Médio |
-| 9 | Limpeza gradual da arquitetura | ⚪ Planejada | Médio |
-| 10 | Gestão avançada | 🔵 Futura | Avaliar caso a caso |
+| 2 | Acesso compartilhado + desempenho | ✅ Concluída | Baixo |
+| 3 | Modo Lista | 🟡 Próxima | Baixo |
+| 4 | Ficha operacional do cliente | ⚪ Planejada | Baixo |
+| 5 | Calendário / prazos | ⚪ Planejada | Baixo |
+| 6 | Relatórios por pedido/prazo | ⚪ Planejada | Baixo |
+| 7 | Busca global | ⚪ Planejada | Baixo |
+| 8 | Administração organizada | ⚪ Planejada | Médio |
+| 9 | Anexos / Storage | ⚠️ Planejada | Médio |
+| 10 | Limpeza gradual da arquitetura | ⚪ Planejada | Médio |
+| 11 | Gestão avançada | 🔵 Futura | Avaliar caso a caso |
 
 Essa ordem pode ser alterada pelo usuário, mas nunca silenciosamente pela manutenção.
 
@@ -629,7 +719,7 @@ Uma versão funcional só deve ser considerada pronta quando, conforme o módulo
 - permissões administrativas;
 - ausência de alteração inesperada no Firestore.
 
-Para anexos, quando a Etapa 8 existir de fato, acrescentar:
+Para anexos, quando a Etapa 9 existir de fato, acrescentar:
 
 - upload;
 - leitura/download;
@@ -720,4 +810,4 @@ Antes de alterar o sistema:
 
 ## Próxima ação registrada
 
-**Implementar a ETAPA 2 — Modo Lista de tarefas, preservando o Kanban e reutilizando os mesmos objetos `tasks` já carregados.**
+**Implementar a ETAPA 3 — Modo Lista de tarefas, preservando o Kanban e reutilizando os mesmos objetos `tasks` já carregados.**
