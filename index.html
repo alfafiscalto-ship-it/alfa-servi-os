@@ -3193,7 +3193,6 @@ Preservar os nomes dos campos gravados no Firestore para manter compatibilidade 
       const employeeButton = event.target.closest("[data-home-employee]");
       if (employeeButton && isAdminUser()) {
         selectEmployee(employeeButton.dataset.homeEmployee);
-        setView("tasks");
       }
     }
 
